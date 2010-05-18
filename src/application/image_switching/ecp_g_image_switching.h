@@ -10,7 +10,7 @@
 
 #include "ecp/common/generator/ecp_generator.h"
 #include "lib/mrmath/mrmath.h"
-#include "image_switching_types.h"
+//#include "image_switching_types.h"
 
 namespace mrrocpp {
 
@@ -34,7 +34,7 @@ public:
 
 	static const char configSectionName[];
 protected:
-	boost::shared_ptr <ecp_mp::sensor::fradia_sensor <image_based_reading, image_based_configuration> > vsp_fradia;
+//	boost::shared_ptr <ecp_mp::sensor::fradia_sensor <image_based_reading, image_based_configuration> > vsp_fradia;
 	/** Is log enabled*/
 	bool logEnabled;
 	/**

@@ -9,7 +9,7 @@
 
 namespace mrrocpp {
 namespace ecp {
-namespace irp6ot {
+namespace irp6ot_m {
 
 ecp_g_rotate_gripper::ecp_g_rotate_gripper(common::task::task& _ecp_task, double _speed):
 	common::generator::generator(_ecp_task) {
@@ -116,5 +116,3 @@ bool ecp_g_rotate_gripper::next_step() {
 } // namespace irp6ot
 } // namespace ecp
 } // namespace mrrocpp
-
-

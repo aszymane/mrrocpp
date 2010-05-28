@@ -1,4 +1,4 @@
-add_library(mpmain
+add_library(mp
 	task/mp_task.cc
 	robot/mp_robot.cc
 	mp_m.cc
@@ -9,11 +9,12 @@ add_library(mpmain
 
 add_library(mprobots
 	robot/mp_r_conveyor.cc
-	robot/mp_r_irp6_on_track.cc
-	robot/mp_r_irp6_postument.cc
+	robot/mp_r_irp6ot_m.cc
+	robot/mp_r_irp6p_m.cc
 	robot/mp_r_speaker.cc
 	robot/mp_r_irp6_mechatronika.cc
 	robot/mp_r_polycrank.cc
+	robot/mp_r_bird_hand.cc
 	robot/mp_r_spkm.cc
 	robot/mp_r_smb.cc
 	robot/mp_r_shead.cc
@@ -26,8 +27,8 @@ add_executable(mp_c
 	task/mp_t_c.cc
 )
 
-target_link_libraries(mp_c mpmain)
+target_link_libraries(mp_c mp)
 
-target_link_libraries(mpmain mprobots ecp_mp)
+target_link_libraries(mp mprobots ecp_mp)
 
 install(TARGETS mp_c DESTINATION bin)

@@ -42,7 +42,6 @@ void set_next_ecps_state::configure(int l_mp_2_ecp_next_state,
 		} else {
 			memcpy(ecp_next_state.mp_2_ecp_next_state_string,
 					l_mp_2_ecp_next_state_string, str_len);
-
 		}
 	}
 }
@@ -86,8 +85,7 @@ generator(_mp_task)
 
 bool send_end_motion_to_ecps::first_step ()
 {
-BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
-{
+BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m) {
 	robot_node.second->mp_command.command = lib::END_MOTION;
 	robot_node.second->communicate = true;
 }
@@ -193,8 +191,7 @@ bool empty::first_step()
 // Inicjacja generatora trajektorii
 // printf("mp first step\n");
 // wait_for_ECP_pulse = true;
-BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
-{
+BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m) {
 	robot_node.second->mp_command.command = lib::NEXT_POSE;
 	robot_node.second->mp_command.instruction.instruction_type = lib::QUERY;
 	robot_node.second->communicate = true;
@@ -317,9 +314,6 @@ robot_m_iterator->second->ecp_reply_package.reply_package.arm.pf_def.arm_coordin
 // printf("Y_d= %lf  Y_a= %lf\n",robot_list->E_ptr->mp_command.instruction.arm.pf_def.arm_coordinates[1],robot_list->E_ptr->ecp_reply_package.reply_package.arm.pf_def.arm_coordinates[1]);
 // printf("Z_d= %lf  Z_a= %lf\n",robot_list->E_ptr->mp_command.instruction.arm.pf_def.arm_coordinates[2],robot_list->E_ptr->ecp_reply_package.reply_package.arm.pf_def.arm_coordinates[2]);
 
-robot_m_iterator->second->mp_command.instruction.arm.pf_def.gripper_coordinate =
-robot_m_iterator->second->ecp_reply_package.reply_package.arm.pf_def.gripper_coordinate
-+ node_counter * irp6ot_td.coordinate_delta[6] / irp6ot_td.interpolation_node_no;
 
 // by Y - ZAKOMENTOWANE ponizej - nie wiadomo jaka idea temu przyswiecala
 // ale dzialalo to zle z generatorami transparentnymi ECP
@@ -343,10 +337,6 @@ if ((++robot_m_iterator) != robot_m.end())
 	robot_m_iterator->second->mp_command.instruction.arm.pf_def.arm_coordinates[i] =
 	robot_m_iterator->second->ecp_reply_package.reply_package.arm.pf_def.arm_coordinates[i]
 	+ node_counter * irp6p_td.coordinate_delta[i] / irp6p_td.interpolation_node_no;
-
-	robot_m_iterator->second->mp_command.instruction.arm.pf_def.gripper_coordinate =
-	robot_m_iterator->second->ecp_reply_package.reply_package.arm.pf_def.gripper_coordinate
-	+ node_counter * irp6p_td.coordinate_delta[6] / irp6p_td.interpolation_node_no;
 
 }
 

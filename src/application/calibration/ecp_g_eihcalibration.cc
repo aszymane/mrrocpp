@@ -37,13 +37,11 @@ bool eihgenerator::first_step()
 	the_robot->ecp_command.instruction.get_arm_type = lib::FRAME;
 
 	sensor->to_vsp.i_code = lib::VSP_INITIATE_READING;
-
 	return true;
 }
 
 bool eihgenerator::next_step()
 {
-	float t[12];
 	if(sensor->from_vsp.comm_image.sensor_union.chessboard.found == true)
 		count++;
 	get_frame();

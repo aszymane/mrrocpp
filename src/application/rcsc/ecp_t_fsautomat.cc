@@ -22,8 +22,8 @@
 #include "lib/srlib.h"
 #include "ecp_mp_t_fsautomat.h"
 
-#include "ecp/irp6_on_track/ecp_r_irp6ot.h"
-#include "ecp/irp6_postument/ecp_r_irp6p.h"
+#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "ecp/irp6p_m/ecp_r_irp6p_m.h"
 #include "ecp/common/generator/ecp_g_smooth.h"
 #include "ecp/common/generator/ecp_g_force.h"
 #include "ecp_t_fsautomat.h"
@@ -75,10 +75,10 @@ fsautomat::fsautomat(lib::configurator &_config) : task(_config),
 	go_st(NULL)
 {
 	// the robot is choose dependendant on the section of configuration file sent as argv[4]
-	if (config.section_name == ECP_IRP6_ON_TRACK_SECTION) {
-		ecp_m_robot = new irp6ot::robot (*this);
-	} else if (config.section_name == ECP_IRP6_POSTUMENT_SECTION) {
-		ecp_m_robot = new irp6p::robot (*this);
+	if (config.section_name == ECP_IRP6OT_M_SECTION) {
+		ecp_m_robot = new irp6ot_m::robot (*this);
+	} else if (config.section_name == ECP_IRP6P_M_SECTION) {
+		ecp_m_robot = new irp6p_m::robot (*this);
 	} else {
 		// TODO: throw, robot unsupported
 		return;
@@ -214,6 +214,8 @@ fsautomat::fsautomat(lib::configurator &_config) : task(_config),
 
 void fsautomat::main_task_algorithm(void)
 {
+
+
 	std::string fileName = config.value<std::string>("xml_file", "[xml_settings]");
 	int trjConf = config.value<int>("trajectory_from_xml", "[xml_settings]");
 	int ecpLevel = config.value<int>("trajectory_on_ecp_level", "[xml_settings]");
@@ -227,6 +229,7 @@ void fsautomat::main_task_algorithm(void)
 	}
 
 	for(;;) {
+
 		sr_ecp_msg->message("Waiting for MP order");
 
 		get_next_state ();
@@ -235,6 +238,7 @@ void fsautomat::main_task_algorithm(void)
 
 		switch ( (ecp_mp::task::STATE_MACHINE_ECP_STATES) mp_command.ecp_next_state.mp_2_ecp_next_state)
 		{
+
 			case ecp_mp::task::ECP_GEN_TEACH_IN:
 			{
 				std::string path(mrrocpp_network_path);
@@ -251,6 +255,7 @@ void fsautomat::main_task_algorithm(void)
 			case ecp_mp::task::ECP_GEN_SMOOTH:
 				if(trjConf)
 				{
+
 					if(ecpLevel)
 					{
 						sg->load_trajectory_from_xml((*trjMap)[mp_command.ecp_next_state.mp_2_ecp_next_state_string]);
@@ -261,13 +266,16 @@ void fsautomat::main_task_algorithm(void)
 						path += fileName;
 						sg->load_trajectory_from_xml(path.c_str(), mp_command.ecp_next_state.mp_2_ecp_next_state_string);
 					}
-				}
-				else
+				}//if
+				else   //moj przypadekl -> z pliku
 				{
 					std::string path(mrrocpp_network_path);
 					path += mp_command.ecp_next_state.mp_2_ecp_next_state_string;
+				//	sg->get_type_for_smooth_xml(path.c_str());
+				//
+				//	sg->get_type_for_smooth_xml2(path.c_str(), mp_command.ecp_next_state.mp_2_ecp_next_state_string);
 					sg->load_file_with_path (path.c_str());
-				}
+				}//else
 				sg->Move();
 				break;
 			case ecp_mp::task::ECP_WEIGHT_MEASURE_GENERATOR:

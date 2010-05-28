@@ -57,6 +57,8 @@ ApEventLink_t AbInternalLinks[] = {
 	{ 3, 0, 0L, 0L, 0L, &wnd_irp6ot_tfg_servo_algorithm, NULL, NULL, 0, NULL, 0, 11, 10, 30, },
 	{ 3, 0, 0L, 0L, 0L, &wnd_irp6p_tfg_moves, NULL, NULL, 0, NULL, 0, 11, 10, 30, },
 	{ 3, 0, 0L, 0L, 0L, &wnd_irp6p_tfg_servo_algorithm, NULL, NULL, 0, NULL, 0, 11, 10, 30, },
+	{ 3, 0, 0L, 0L, 0L, &wnd_bird_hand_command_and_status, NULL, NULL, 0, NULL, 0, 11, 10, 30, },
+	{ 3, 0, 0L, 0L, 0L, &wnd_bird_hand_configuration, NULL, NULL, 0, NULL, 0, 11, 10, 30, },
 	{ 0 }
 	};
 
@@ -1184,6 +1186,8 @@ static const ApEventLink_t AbLinks_robot_menu[] = {
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_smb_edp_unload", 2009, EDP_smb_slay, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_shead_edp_load", 2009, EDP_shead_create, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_shead_edp_unload", 2009, EDP_shead_slay, 0, 0, 0, 0, },
+	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_bird_hand_edp_load", 2009, EDP_bird_hand_create, 0, 0, 0, 0, },
+	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_bird_hand_edp_unload", 2009, EDP_bird_hand_slay, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_speaker_edp_load", 2009, EDP_speaker_create, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_speaker_edp_unload", 2009, EDP_speaker_slay, 0, 0, 0, 0, },
 	{ 8, 0, 0L, 0L, 0L, NULL, NULL, "mm_speaker_play", 2009, start_wind_speaker_play, 0, 0, 0, 0, },

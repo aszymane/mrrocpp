@@ -10,7 +10,10 @@
 
 #include "ecp/common/generator/ecp_generator.h"
 #include "lib/mrmath/mrmath.h"
-//#include "image_switching_types.h"
+#include "ecp_mp/sensor/ecp_mp_s_fradia_sensor.h"
+#include "ecp_mp/sensor/ecp_mp_sensor.h"
+#include "image_switching_types.h"
+#include <boost/shared_ptr.hpp>
 
 namespace mrrocpp {
 
@@ -33,6 +36,10 @@ public:
 	virtual bool next_step();
 
 	static const char configSectionName[];
+	boost::shared_ptr <ecp_mp::sensor::fradia_sensor <image_switching_types::position_based_reading, image_switching_types::fradia_configuration> > vsp_fradia;
+
+	bool tracking;
+	image_switching_types::position_based_position readings;
 protected:
 //	boost::shared_ptr <ecp_mp::sensor::fradia_sensor <image_based_reading, image_based_configuration> > vsp_fradia;
 	/** Is log enabled*/

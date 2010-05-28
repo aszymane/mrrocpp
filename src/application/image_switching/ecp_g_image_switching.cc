@@ -30,6 +30,8 @@ ecp_g_image_switching::ecp_g_image_switching(mrrocpp::ecp::common::task::task & 
 {
 	licznik=0;
 	promien=0.05;
+
+
 //	char kp_name[] = { "kp" };
 //	char maxt_name[] = { "maxt" };
 //
@@ -68,8 +70,6 @@ bool ecp_g_image_switching::first_step()
 	the_robot->ecp_command.instruction.motion_steps = MOTION_STEPS;
 	the_robot->ecp_command.instruction.value_in_step_no = MOTION_STEPS - 3;
 
-//	vsp_fradia = sensor_m[lib::SENSOR_CVFRADIA];
-
 //	for (int i = 0; i < 6; i++) {
 //		the_robot->ecp_command.instruction.arm.pf_def.behaviour[i] = lib::UNGUARDED_MOTION;
 //	}
@@ -102,6 +102,7 @@ bool ecp_g_image_switching::first_step()
 //
 //	lib::Homog_matrix tool_frame(0.0, 0.0, 0.25);
 //	
+
 }
 
 bool ecp_g_image_switching::next_step()
@@ -109,44 +110,62 @@ bool ecp_g_image_switching::next_step()
 	log("ecp_g_image_switching::next_step()\n");
 
 	the_robot->ecp_command.instruction.instruction_type = lib::SET_GET;
-		the_robot->ecp_command.instruction.get_type = ARM_DEFINITION; // arm - ORYGINAL
-		the_robot->ecp_command.instruction.set_type = ARM_DEFINITION;
-		the_robot->ecp_command.instruction.get_arm_type = lib::FRAME;//polozenie w xyz w macierzy 3na4
-		the_robot->ecp_command.instruction.set_arm_type = lib::FRAME;
+	the_robot->ecp_command.instruction.get_type = ARM_DEFINITION; // arm - ORYGINAL
+	the_robot->ecp_command.instruction.set_type = ARM_DEFINITION;
+	the_robot->ecp_command.instruction.get_arm_type = lib::FRAME;//polozenie w xyz w macierzy 3na4
+	the_robot->ecp_command.instruction.set_arm_type = lib::FRAME;
 
-		the_robot->ecp_command.instruction.interpolation_type = lib::TCIM;
-		the_robot->ecp_command.instruction.motion_steps = MOTION_STEPS;
-		the_robot->ecp_command.instruction.value_in_step_no = MOTION_STEPS - 3;
-		the_robot->ecp_command.instruction.motion_type = lib::ABSOLUTE;//polozenie od srodka postumenta
+	the_robot->ecp_command.instruction.interpolation_type = lib::TCIM;
+	the_robot->ecp_command.instruction.motion_steps = MOTION_STEPS;
+	the_robot->ecp_command.instruction.value_in_step_no = MOTION_STEPS - 3;
+	the_robot->ecp_command.instruction.motion_type = lib::ABSOLUTE;//polozenie od srodka postumenta
 
-		if(licznik==0)
-		{
-			currentFrame.set_from_frame_tab(the_robot->reply_package.arm.pf_def.arm_frame);
-			currentGripperCoordinate = the_robot->reply_package.arm.pf_def.gripper_coordinate;
-			currentFrame.get_translation_vector(firstTransVector);//srodek okregu
-			//std::cout << currentFrame << std::endl;
-			licznik++;
-		}
+	vsp_fradia->get_reading();
+	tracking=vsp_fradia->received_object.tracking;
+	readings=vsp_fradia->received_object.error;
 
-		log("ecp_g_image_switching::next_step() %d\n",index);
-		lib::Homog_matrix nextFrame;
-		nextFrame = currentFrame;
+	if(licznik==0)
+	{
+		currentFrame.set_from_frame_tab(the_robot->reply_package.arm.pf_def.arm_frame);
+		currentGripperCoordinate = the_robot->reply_package.arm.pf_def.gripper_coordinate;
+		currentFrame.get_translation_vector(firstTransVector);//srodek okregu
+		//std::cout << currentFrame << std::endl;
+		licznik++;
+	}
 
+	log("ecp_g_image_switching::next_step() %d\n",index);
+	lib::Homog_matrix nextFrame;
+	nextFrame = currentFrame;
+
+	if(tracking)
+	{
+		printf("tracking\n");
 		double trans_vect [3];
 
 		/*modyfikuj nextFrame*/
 		nextFrame.get_translation_vector(trans_vect);
+		if(readings.z>2)
+			readings.z=2;
+		if(readings.y>2)
+			readings.y=2;
+		if(readings.x>2)
+			readings.x=2;
 
-		trans_vect[1]= firstTransVector[1] + 0.5*sin(0.1*licznik);
-		trans_vect[2]= firstTransVector[2] + 0.5*cos(0.1*licznik) - 0.5;// -r : aby zniwelowac podskok ze srodka okregu na okrag
-		licznik= licznik+1;
+		trans_vect[0]=trans_vect[0]+readings.x/100;
+		trans_vect[1]=trans_vect[1]+readings.y/100;
+		trans_vect[2]=trans_vect[2]+readings.z/100;
+
+//		trans_vect[1]= firstTransVector[1] + 0.5*sin(0.1*licznik);
+//		trans_vect[2]= firstTransVector[2] + 0.5*cos(0.1*licznik) - 0.5;// -r : aby zniwelowac podskok ze srodka okregu na okrag
+//		licznik= licznik+1;
 
 		nextFrame.set_translation_vector(trans_vect);
 		/*koniec modyfikacji*/
+	}
 
-		nextFrame.get_frame_tab(the_robot->ecp_command.instruction.arm.pf_def.arm_frame);
-		the_robot->ecp_command.instruction.arm.pf_def.gripper_coordinate = currentGripperCoordinate;
-		currentFrame = nextFrame;
+	nextFrame.get_frame_tab(the_robot->ecp_command.instruction.arm.pf_def.arm_frame);
+	the_robot->ecp_command.instruction.arm.pf_def.gripper_coordinate = currentGripperCoordinate;
+	currentFrame = nextFrame;
 
 }
 

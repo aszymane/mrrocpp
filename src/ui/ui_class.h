@@ -22,12 +22,17 @@
 #include "ui/src/shead/ui_r_shead.h"
 #include "ui/src/smb/ui_r_smb.h"
 
+/* Local headers */
+#include "../ablibs.h"
+
 //
 //
 // KLASA ui
 //
 //
 
+class ui_sr_buffer;
+class ui_ecp_buffer;
 
 // super klasa agregujaca porozrzucane struktury
 
@@ -38,13 +43,10 @@ private:
 public:
 
 	ui_sr_buffer* ui_sr_obj;
-
 	ui_ecp_buffer* ui_ecp_obj;
 
 	feb_thread* meb_tid;
 
-	pthread_t ui_tid;
-	pthread_t sr_tid;
 
 	function_execution_buffer main_eb;
 
@@ -100,17 +102,17 @@ public:
 
 
 	// The Ui robots
-	UiRobotBirdHand bird_hand;
-	UiRobotIrp6ot_m irp6ot_m;
-	UiRobotIrp6ot_tfg irp6ot_tfg;
-	UiRobotIrp6p_m irp6p_m;
-	UiRobotIrp6p_tfg irp6p_tfg;
-	UiRobotIrp6m_m irp6m_m;
-	UiRobotConveyor conveyor;
-	UiRobotSpeaker speaker;
-	UiRobotSpkm spkm;
-	UiRobotSmb smb;
-	UiRobotShead shead;
+	UiRobotBirdHand *bird_hand;
+	UiRobotIrp6ot_m *irp6ot_m;
+	UiRobotIrp6ot_tfg *irp6ot_tfg;
+	UiRobotIrp6p_m *irp6p_m;
+	UiRobotIrp6p_tfg *irp6p_tfg;
+	UiRobotIrp6m_m *irp6m_m;
+	UiRobotConveyor *conveyor;
+	UiRobotSpeaker *speaker;
+	UiRobotSpkm *spkm;
+	UiRobotSmb *smb;
+	UiRobotShead *shead;
 
 	Ui();
 	void UI_close(void);
@@ -136,6 +138,11 @@ public:
 	bool deactivate_ecp_trigger(ecp_edp_ui_robot_def &robot_l);
 	int execute_mp_pulse(char pulse_code);
 	int pulse_reader_execute(int coid, int pulse_code, int pulse_value);
+	int set_toggle_button(PtWidget_t *widget);
+	int unset_toggle_button(PtWidget_t *widget);
+	int block_widget(PtWidget_t *widget);
+	int unblock_widget(PtWidget_t *widget);
+	void create_threads();
 
 };
 

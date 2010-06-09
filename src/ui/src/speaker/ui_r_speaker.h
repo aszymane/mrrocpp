@@ -20,7 +20,7 @@
 
 // super klasa agregujaca porozrzucane struktury
 
-
+class Ui;
 class ui_speaker_robot;
 
 class UiRobotSpeaker: public UiRobot {
@@ -31,13 +31,13 @@ public:
 	bool is_wind_speaker_play_open; // informacja czy okno odtwarzania dzwiekow jest otwarte
 	ui_speaker_robot *ui_ecp_robot;
 
-	UiRobotSpeaker();
+	UiRobotSpeaker(Ui& _ui);
 	int reload_configuration();
 	int manage_interface();
 
-	bool pulse_reader_speaker_start_exec_pulse();
-	bool pulse_reader_speaker_stop_exec_pulse();
-	bool pulse_reader_speaker_trigger_exec_pulse();
+	int close_all_windows();
+	int delete_ui_ecp_robot();
+
 };
 
 #endif

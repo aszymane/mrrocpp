@@ -3,6 +3,7 @@
 /*                                         Version 2.01  */
 
 #include "ui/src/irp6m_m/ui_r_irp6m_m.h"
+#include "ui/ui_ecp_r_irp6_common.h"
 #include "lib/robot_consts/irp6m_const.h"
 #include "ui/ui_class.h"
 
@@ -11,7 +12,7 @@
 #include "../abimport.h"
 #include "../gcc_ntox86/proto.h"
 
-extern Ui ui;
+
 
 // extern ui_state_def ui_state;
 
@@ -22,16 +23,16 @@ extern Ui ui;
 //
 
 
-UiRobotIrp6m_m::UiRobotIrp6m_m() :
-			UiRobot(EDP_IRP6_MECHATRONIKA_SECTION,
-					ECP_IRP6_MECHATRONIKA_SECTION), ui_ecp_robot(NULL),
+UiRobotIrp6m_m::UiRobotIrp6m_m(Ui& _ui) :
+			UiRobot(_ui, EDP_IRP6_MECHATRONIKA_SECTION,
+					ECP_IRP6_MECHATRONIKA_SECTION),
 			is_wind_irp6m_int_open(false), is_wind_irp6m_inc_open(false),
 			is_wind_irp6m_xyz_euler_zyz_open(false),
 			is_wind_irp6m_xyz_angle_axis_open(false),
 			is_wind_irp6m_xyz_angle_axis_ts_open(false),
 			is_wind_irp6m_xyz_euler_zyz_ts_open(false),
 			is_wind_irp6m_kinematic_open(false),
-			is_wind_irp6m_servo_algorithm_open(false) {
+			is_wind_irp6m_servo_algorithm_open(false), ui_ecp_robot(NULL) {
 
 }
 
@@ -230,8 +231,6 @@ int UiRobotIrp6m_m::manage_interface() {
 	return 1;
 }
 
-
-
 // aktualizacja ustawien przyciskow
 int UiRobotIrp6m_m::process_control_window_irp6m_section_init(
 		bool &wlacz_PtButton_wnd_processes_control_all_reader_start,
@@ -239,23 +238,23 @@ int UiRobotIrp6m_m::process_control_window_irp6m_section_init(
 		bool &wlacz_PtButton_wnd_processes_control_all_reader_trigger) {
 
 	if (state.edp.state <= 0) {// edp wylaczone
-		block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_start);
-		block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
-		block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_trigger);
+		ui.block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_start);
+		ui.block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
+		ui.block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_trigger);
 	} else {
 		if (state.edp.state == 1) {// edp wlaczone reader czeka na start
 			wlacz_PtButton_wnd_processes_control_all_reader_start = true;
-			unblock_widget(
+			ui.unblock_widget(
 					ABW_PtButton_wnd_processes_control_irp6m_reader_start);
-			block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
-			block_widget(
+			ui.block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
+			ui.block_widget(
 					ABW_PtButton_wnd_processes_control_irp6m_reader_trigger);
 		} else if (state.edp.state == 2) {// edp wlaczone reader czeka na stop
 			wlacz_PtButton_wnd_processes_control_all_reader_stop = true;
 			wlacz_PtButton_wnd_processes_control_all_reader_trigger = true;
-			block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_start);
-			unblock_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
-			unblock_widget(
+			ui.block_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_start);
+			ui.unblock_widget(ABW_PtButton_wnd_processes_control_irp6m_reader_stop);
+			ui.unblock_widget(
 					ABW_PtButton_wnd_processes_control_irp6m_reader_trigger);
 		}
 	}
@@ -265,3 +264,28 @@ int UiRobotIrp6m_m::process_control_window_irp6m_section_init(
 	return 1;
 
 }
+
+int UiRobotIrp6m_m::close_all_windows() {
+
+	int pt_res = PtEnter(0);
+
+	close_wnd_irp6_mechatronika_inc(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_int(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_xyz_angle_axis(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_xyz_angle_axis_ts(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_xyz_euler_zyz(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_xyz_euler_zyz_ts(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_kinematic(NULL, NULL, NULL);
+	close_wnd_irp6_mechatronika_servo_algorithm(NULL, NULL, NULL);
+
+	if (pt_res >= 0) {
+		PtLeave(0);
+	}
+	return 1;
+
+}
+int UiRobotIrp6m_m::delete_ui_ecp_robot() {
+	delete ui_ecp_robot;
+	return 1;
+}
+

@@ -16,7 +16,6 @@ add_executable(ui
 	../fun_r_smb.cc
 	../fun_r_speaker.cc
 	../fun_r_spkm.cc
-	../threads.cc
 	../timer.cc
 	../ui.cc
 	../ui_ecp_r_common.cc
@@ -24,6 +23,8 @@ add_executable(ui
 	../speaker/ui_ecp_r_speaker.cc
 	../ui_ecp_r_tfg_and_conv.cc
 	../bird_hand/ui_ecp_r_bird_hand.cc
+	../bird_hand/wnd_bird_hand_command_and_status.cc
+	../bird_hand/wnd_bird_hand_configuration.cc
 	../ui_robot.cc
 	../bird_hand/ui_r_bird_hand.cc
 	../irp6ot_m/ui_r_irp6ot_m.cc
@@ -39,6 +40,8 @@ add_executable(ui
 	../shead/ui_r_shead.cc
 	../ui_init.cc
 	../ui_class.cc
+	../ui_ecp.cc
+	../ui_sr.cc
 	../wndFileLocationEvents.cc
 	../wndForceControlEvents.cc
 	../wndTrajectoryReproduceEvents.cc
@@ -95,6 +98,7 @@ set(ABMOD Icon.wgti MAM_wnd_manual_moves_automatic_measures.wgtw base.wgtw
 	wnd_irp6_postument_xyz_euler_zyz_ts.wgtw wnd_irp6ot_tfg_moves.wgtw
 	wnd_irp6ot_tfg_servo_algorithm.wgtw wnd_irp6p_tfg_moves.wgtw
 	wnd_irp6p_tfg_servo_algorithm.wgtw wnd_message.wgtw
+	wnd_bird_hand_command_and_status.wgtw wnd_bird_hand_configuration.wgtw
 	wnd_processes_control.wgtw wnd_speaker_play.wgtw yes_no_window.wgtw)
 
 ADD_CUSTOM_TARGET(ui_photon_application ALL

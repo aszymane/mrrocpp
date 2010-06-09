@@ -2,7 +2,10 @@
 /*                            AppBuilder Photon Code Lib */
 /*                                         Version 2.01  */
 
+#include "ui/src/bird_hand/ui_ecp_r_bird_hand.h"
 #include "ui/src/bird_hand/ui_r_bird_hand.h"
+#include "ui/src/bird_hand/wnd_bird_hand_command_and_status.h"
+#include "ui/src/bird_hand/wnd_bird_hand_configuration.h"
 #include "lib/robot_consts/bird_hand_const.h"
 #include "ui/ui_class.h"
 
@@ -11,10 +14,6 @@
 #include "../abimport.h"
 #include "../gcc_ntox86/proto.h"
 
-extern Ui ui;
-
-// extern ui_state_def ui_state;
-
 //
 //
 // KLASA UiRobotBirdHand
@@ -22,10 +21,11 @@ extern Ui ui;
 //
 
 
-UiRobotBirdHand::UiRobotBirdHand() :
-	UiRobot(EDP_BIRD_HAND_SECTION, ECP_BIRD_HAND_SECTION), ui_ecp_robot(NULL),
-			is_wnd_bird_hand_command_and_status_open(false),
-			is_wnd_bird_hand_configuration_open(false) {
+UiRobotBirdHand::UiRobotBirdHand(Ui& _ui) :
+	UiRobot(_ui, EDP_BIRD_HAND_SECTION, ECP_BIRD_HAND_SECTION),
+	ui_ecp_robot(NULL) {
+	wnd_command_and_status = new WndBirdHandCommandAndStatus(ui, *this);
+	wnd_configuration = new WndBirdHandConfiguration(ui, *this);
 
 }
 
@@ -111,9 +111,8 @@ int UiRobotBirdHand::manage_interface() {
 		break;
 	case 0:
 		ApModifyItemState(&robot_menu, AB_ITEM_DIM,
-				ABN_mm_bird_hand_edp_unload,
-
-				NULL);
+				ABN_mm_bird_hand_edp_unload, ABN_mm_bird_hand_command,
+				ABN_mm_bird_hand_configuration, NULL);
 		ApModifyItemState(&robot_menu, AB_ITEM_NORMAL, ABN_mm_bird_hand,
 				ABN_mm_bird_hand_edp_load, NULL);
 
@@ -132,22 +131,25 @@ int UiRobotBirdHand::manage_interface() {
 			case UI_MP_NOT_PERMITED_TO_RUN:
 			case UI_MP_PERMITED_TO_RUN:
 				ApModifyItemState(&robot_menu, AB_ITEM_NORMAL,
-						ABN_mm_bird_hand_edp_unload, NULL);
+						ABN_mm_bird_hand_edp_unload, ABN_mm_bird_hand_command,
+						ABN_mm_bird_hand_configuration, NULL);
 				ApModifyItemState(&robot_menu, AB_ITEM_DIM,
 						ABN_mm_bird_hand_edp_load, NULL);
 				break;
 			case UI_MP_WAITING_FOR_START_PULSE:
 				ApModifyItemState(&robot_menu, AB_ITEM_NORMAL,
-
-				NULL);
+						ABN_mm_bird_hand_command,
+						ABN_mm_bird_hand_configuration, NULL);
 				ApModifyItemState(&robot_menu, AB_ITEM_DIM,
 						ABN_mm_bird_hand_edp_load, ABN_mm_bird_hand_edp_unload,
 						NULL);
 				break;
 			case UI_MP_TASK_RUNNING:
 			case UI_MP_TASK_PAUSED:
-				ApModifyItemState(&robot_menu, AB_ITEM_DIM, // modyfikacja menu - ruchy reczne zakazane
-						NULL);
+				ApModifyItemState(&robot_menu,
+						AB_ITEM_DIM, // modyfikacja menu - ruchy reczne zakazane
+						ABN_mm_bird_hand_command,
+						ABN_mm_bird_hand_configuration, NULL);
 				break;
 			default:
 				break;
@@ -157,7 +159,8 @@ int UiRobotBirdHand::manage_interface() {
 			ApModifyItemState(&robot_menu, AB_ITEM_NORMAL,
 					ABN_mm_bird_hand_edp_unload, NULL);
 			ApModifyItemState(&robot_menu, AB_ITEM_DIM,
-					ABN_mm_bird_hand_edp_load, NULL);
+					ABN_mm_bird_hand_edp_load, ABN_mm_bird_hand_command,
+					ABN_mm_bird_hand_configuration, NULL);
 			ApModifyItemState(&all_robots_menu, AB_ITEM_NORMAL,
 					ABN_mm_all_robots_synchronisation, NULL);
 		}
@@ -166,6 +169,25 @@ int UiRobotBirdHand::manage_interface() {
 		break;
 	}
 
+	return 1;
+}
+
+int UiRobotBirdHand::close_all_windows() {
+
+	int pt_res = PtEnter(0);
+
+	close_wnd_bird_hand_command_and_status(NULL, NULL, NULL);
+	close_wnd_bird_hand_configuration(NULL, NULL, NULL);
+
+	if (pt_res >= 0) {
+		PtLeave(0);
+	}
+	return 1;
+
+}
+
+int UiRobotBirdHand::delete_ui_ecp_robot() {
+	delete ui_ecp_robot;
 	return 1;
 }
 

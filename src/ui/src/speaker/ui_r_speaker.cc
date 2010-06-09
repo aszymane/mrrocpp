@@ -3,6 +3,7 @@
 /*                                         Version 2.01  */
 
 #include "ui/src/speaker/ui_r_speaker.h"
+#include "ui/src/speaker/ui_ecp_r_speaker.h"
 #include "lib/robot_consts/speaker_const.h"
 #include "ui/ui_class.h"
 
@@ -11,10 +12,6 @@
 #include "../abimport.h"
 #include "../gcc_ntox86/proto.h"
 
-extern Ui ui;
-
-// extern ui_state_def ui_state;
-
 //
 //
 // KLASA UiRobotIrp6ot_m
@@ -22,9 +19,9 @@ extern Ui ui;
 //
 
 
-UiRobotSpeaker::UiRobotSpeaker() :
-	UiRobot(EDP_SPEAKER_SECTION, ECP_SPEAKER_SECTION), ui_ecp_robot(NULL),
-			is_wind_speaker_play_open(false) {
+UiRobotSpeaker::UiRobotSpeaker(Ui& _ui) :
+	UiRobot(_ui, EDP_SPEAKER_SECTION, ECP_SPEAKER_SECTION),
+			is_wind_speaker_play_open(false), ui_ecp_robot(NULL) {
 
 }
 
@@ -174,35 +171,21 @@ int UiRobotSpeaker::manage_interface() {
 
 }
 
-bool UiRobotSpeaker::pulse_reader_speaker_start_exec_pulse() {
+int UiRobotSpeaker::close_all_windows() {
 
-	if (state.edp.state == 1) {
-		ui.pulse_reader_execute(state.edp.reader_fd, READER_START, 0);
-		state.edp.state = 2;
-		return true;
+	int pt_res = PtEnter(0);
+
+	close_wnd_speaker_play(NULL, NULL, NULL);
+
+	if (pt_res >= 0) {
+		PtLeave(0);
 	}
+	return 1;
 
-	return false;
+
 }
 
-bool UiRobotSpeaker::pulse_reader_speaker_stop_exec_pulse() {
-
-	if (state.edp.state == 2) {
-		ui.pulse_reader_execute(state.edp.reader_fd, READER_STOP, 0);
-		state.edp.state = 1;
-		return true;
-	}
-
-	return false;
-}
-
-bool UiRobotSpeaker::pulse_reader_speaker_trigger_exec_pulse() {
-
-	if (state.edp.state == 2) {
-		ui.pulse_reader_execute(state.edp.reader_fd, READER_TRIGGER, 0);
-
-		return true;
-	}
-
-	return false;
+int UiRobotSpeaker::delete_ui_ecp_robot() {
+	delete ui_ecp_robot;
+	return 1;
 }

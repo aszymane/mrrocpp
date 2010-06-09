@@ -4,7 +4,7 @@ add_executable(image_switching
 )
 
 target_link_libraries(image_switching 
-	ecp_r_irp6ot
+	ecp_r_irp6ot_m
 	ecp ${COMMON_LIBRARIES}
 )
 

@@ -11,7 +11,8 @@
 #include <iostream>
 
 
-#include "ecp/irp6_on_track/ecp_r_irp6ot.h"
+//#include "ecp/irp6_on_track/ecp_r_irp6ot.h"
+#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
 #include "ecp_t_image_switching.h"
 
 namespace mrrocpp {
@@ -22,7 +23,7 @@ namespace task {
 //Constructors
 ecp_g_image_switching::ecp_g_image_switching(lib::configurator &_config): task(_config)
 {
-	ecp_m_robot = new robot(*this);
+	ecp_m_robot = new ecp::irp6ot_m::robot(*this);
 
 	//delay(20000);
 //smoothgen2 = new common::generator::smooth(*this, true);

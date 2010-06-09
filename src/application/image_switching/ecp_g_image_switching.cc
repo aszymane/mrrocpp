@@ -102,7 +102,7 @@ bool ecp_g_image_switching::first_step()
 //
 //	lib::Homog_matrix tool_frame(0.0, 0.0, 0.25);
 //	
-
+	return true;
 }
 
 bool ecp_g_image_switching::next_step()
@@ -127,7 +127,6 @@ bool ecp_g_image_switching::next_step()
 	if(licznik==0)
 	{
 		currentFrame.set_from_frame_tab(the_robot->reply_package.arm.pf_def.arm_frame);
-		currentGripperCoordinate = the_robot->reply_package.arm.pf_def.gripper_coordinate;
 		currentFrame.get_translation_vector(firstTransVector);//srodek okregu
 		//std::cout << currentFrame << std::endl;
 		licznik++;
@@ -164,9 +163,9 @@ bool ecp_g_image_switching::next_step()
 	}
 
 	nextFrame.get_frame_tab(the_robot->ecp_command.instruction.arm.pf_def.arm_frame);
-	the_robot->ecp_command.instruction.arm.pf_def.gripper_coordinate = currentGripperCoordinate;
 	currentFrame = nextFrame;
 
+	return true;
 }
 
 void ecp_g_image_switching::log(const char *fmt, ...)

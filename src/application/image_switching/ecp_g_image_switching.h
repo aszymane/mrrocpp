@@ -60,9 +60,6 @@ private:
 	double firstTransVector[3];
 
 //	lib::sensor vsp_fradia;
-
-	double Kp;
-	double maxT;
 };
 
 /** @} */// ecp_g_image_switching

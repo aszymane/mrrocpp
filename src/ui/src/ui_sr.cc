@@ -3,13 +3,13 @@
 /*                                         Version 2.01  */
 
 /* Standard headers */
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
 #include <strings.h>
 
-#include <string.h>
-#include <signal.h>
+#include <cstring>
+#include <csignal>
 #include <dirent.h>
 
 #include <boost/bind.hpp>
@@ -19,48 +19,54 @@
 #include <boost/circular_buffer.hpp>
 
 #include <fcntl.h>
-#include <string.h>
+#include <cstring>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <iostream>
 #include <fstream>
 
 #include <pthread.h>
-#include <errno.h>
+#include <cerrno>
 
-#include "ui/ui.h"
-#include "ui/ui_class.h"
+#include "ui/src/ui.h"
+#include "ui/src/ui_class.h"
 #include "ui/src/ui_ecp.h"
 #include "ui/src/ui_sr.h"
 
-#include "lib/mis_fun.h"
-#include "lib/srlib.h"
-#include "ui/ui_const.h"
-#include "lib/configurator.h"
-#include "lib/mis_fun.h"
+#include "base/lib/mis_fun.h"
+#include "base/lib/sr/srlib.h"
 
-#include "lib/srlib.h"
+#include "base/lib/configurator.h"
 
-#if !defined(USE_MESSIP_SRR)
+#include "base/lib/sr/srlib.h"
+
+#if !defined(__QNXNTO__)
 /* Local headers */
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
 #include <Pt.h>
 #include <Ph.h>
+#endif
 
-void ui_sr_buffer::operator()() {
+namespace mrrocpp {
+namespace ui {
+namespace common {
+
+void sr_buffer::operator()() {
+#if !defined(USE_MESSIP_SRR)
 	lib::set_thread_name("sr");
 
 	name_attach_t *attach;
 
-	if ((attach = name_attach(NULL, ui.sr_attach_point.c_str(),
+	if ((attach = name_attach(NULL, interface.sr_attach_point.c_str(),
 			NAME_FLAG_ATTACH_GLOBAL)) == NULL) {
 		perror(
 				"BLAD SR ATTACH, przypuszczalnie nie uruchomiono gns, albo blad wczytywania konfiguracji");
 		return;
 	}
-	ui.is_sr_thread_loaded = true;
+
+	interface.is_sr_thread_loaded = true;
 	while (1) {
 		lib::sr_package_t sr_msg;
 		//	printf("przed MsgReceive: \n");
@@ -74,7 +80,7 @@ void ui_sr_buffer::operator()() {
 			}
 
 			fprintf(stderr, "SR: Receive failed (%s)\n", strerror(-rcvid));
-			// 	  throw generator::ECP_error(lib::SYSTEM_ERROR, (uint64_t) 0);
+			// 	  throw ECP_error(lib::SYSTEM_ERROR, (uint64_t) 0);
 			break;
 		}
 
@@ -109,31 +115,28 @@ void ui_sr_buffer::operator()() {
 			// prrintf("srt: \n");
 			flushall();
 
-			ui.ui_sr_obj->put_one_msg(sr_msg);
+			put_one_msg(sr_msg);
 
 		} else {
 			printf("SR(%s:%d) unexpected message\n", __FILE__, __LINE__);
 		}
 
 	}
-}
-
 #endif /* USE_MESSIP_SRR */
-
-ui_sr_buffer::ui_sr_buffer(Ui& _ui) :
-	ui(_ui), cb(UI_SR_BUFFER_LENGHT) {
-
-	thread_id = new boost::thread(boost::bind(&ui_sr_buffer::operator(), this));
 }
 
-ui_sr_buffer::~ui_sr_buffer() {
-	//	printf("ui_sr_buffer\n");
-	//	thread_id->interrupt();
-	//	thread_id->join(); // join it
-	//	delete thread_id;
+sr_buffer::sr_buffer(Interface& _interface) :
+	interface(_interface), cb(UI_SR_BUFFER_LENGHT) {
+	thread_id = boost::thread(boost::bind(&sr_buffer::operator(), this));
 }
 
-void ui_sr_buffer::put_one_msg(const lib::sr_package_t& new_msg) {
+sr_buffer::~sr_buffer() {
+	//	printf("sr_buffer\n");
+	//	thread_id.interrupt();
+	//	thread_id.join();
+}
+
+void sr_buffer::put_one_msg(const lib::sr_package_t& new_msg) {
 
 	boost::mutex::scoped_lock lock(mtx);
 	cb.push_back(new_msg);
@@ -141,7 +144,8 @@ void ui_sr_buffer::put_one_msg(const lib::sr_package_t& new_msg) {
 	return;
 }
 
-void ui_sr_buffer::get_one_msg(lib::sr_package_t& new_msg) {
+void sr_buffer::get_one_msg(lib::sr_package_t& new_msg)
+{
 	boost::mutex::scoped_lock lock(mtx);
 	new_msg = cb.front();
 	cb.pop_front();
@@ -149,8 +153,12 @@ void ui_sr_buffer::get_one_msg(lib::sr_package_t& new_msg) {
 	return;
 }
 
-bool ui_sr_buffer::buffer_empty() // sprawdza czy bufor jest pusty
+bool sr_buffer::buffer_empty() // sprawdza czy bufor jest pusty
 {
 	boost::mutex::scoped_lock lock(mtx);
 	return cb.empty();
 }
+
+}
+} //namespace ui
+} //namespace mrrocpp

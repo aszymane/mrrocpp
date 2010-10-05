@@ -1,6 +1,7 @@
+if(QNXNTO)
 add_executable(vsp_time_int
 	vsp_time_sensor.cc
-	../../vsp/common/vsp_m_int.cc ../../vsp/common/vsp_sensor.cc
+	../../base/vsp/vsp_m_int.cc ../../base/vsp/vsp_sensor_interface.cc
 )
 
 target_link_libraries(vsp_time_int
@@ -9,7 +10,7 @@ target_link_libraries(vsp_time_int
 
 add_executable(vsp_time_nint
 	vsp_time_sensor.cc
-	../../vsp/common/vsp_m_nint.cc ../../vsp/common/vsp_sensor.cc
+	../../base/vsp/vsp_m_nint.cc ../../base/vsp/vsp_sensor_interface.cc
 )
 
 target_link_libraries(vsp_time_nint
@@ -18,7 +19,7 @@ target_link_libraries(vsp_time_nint
 
 #add_executable(vsp_time_int_nw
 #	vsp_time_sensor.cc
-#	../../vsp/common/vsp_m_int_nw.cc ../../vsp/common/vsp_sensor.cc
+#	../../base/vsp/vsp_m_int_nw.cc ../../base/vsp/vsp_sensor_interface.cc
 #)
 
 #target_link_libraries(vsp_time_int_nw
@@ -32,3 +33,4 @@ add_executable(ecp_time
 target_link_libraries(ecp_time ecp_r_irp6ot_m ecp_r_irp6p_m ecp)
 
 install(TARGETS vsp_time_int DESTINATION bin)
+endif(QNXNTO)

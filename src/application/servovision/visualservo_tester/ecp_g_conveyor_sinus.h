@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "ecp/common/generator/ecp_generator.h"
+#include "base/ecp/ecp_generator.h"
 
 namespace mrrocpp {
 
@@ -20,6 +20,13 @@ namespace common {
 
 namespace generator {
 
+/** @addtogroup servovision
+ *  @{
+ */
+
+/**
+ *
+ */
 class ecp_g_conveyor_sinus : public mrrocpp::ecp::common::generator::generator
 {
 public:
@@ -39,6 +46,8 @@ private:
 	bool initial_position_saved;
 	double initial_position;
 };
+
+/** @} */
 
 }//namespace
 

@@ -3,51 +3,49 @@
 /*                                         Version 2.01  */
 
 /* Standard headers */
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 #include <strings.h>
 #include <iostream>
 #include <fstream>
 #include <dirent.h>
 #include <sys/types.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/netmgr.h>
-#include <errno.h>
+#include <cerrno>
 #include <process.h>
-#include <math.h>
+#include <cmath>
 
 #include <boost/bind.hpp>
 
-#include "lib/srlib.h"
-#include "ui/ui_const.h"
-#include "ui/ui_class.h"
-// #include "ui/ui.h"
+#include "base/lib/sr/srlib.h"
+#include "ui/src/ui_class.h"
+// #include "ui/src/ui.h"
 // Konfigurator.
-// #include "lib/configurator.h"
-#include "ui/ui_ecp_r_tfg_and_conv.h"
+// #include "base/lib/configurator.h"
+#include "ui/src/ui_ecp_r_tfg_and_conv.h"
 
-#include "lib/robot_consts/conveyor_const.h"
+#include "robot/conveyor/const_conveyor.h"
 
 /* Local headers */
 #include "ablibs.h"
 #include "abimport.h"
 #include "proto.h"
 
-extern Ui ui;
+extern ui::common::Interface interface;
 
 // zamykanie okien ruchow recznych dla robota conveyor
 
-int close_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int close_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->is_wind_conveyor_moves_open) {
+	if (interface.conveyor->is_wind_conveyor_moves_open) {
 		PtDestroyWidget(ABW_wnd_conveyor_moves);
 	}
 
@@ -55,18 +53,17 @@ int close_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int start_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int start_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (!ui.conveyor->is_wind_conv_servo_algorithm_open) // otworz okno
+	if (!interface.conveyor->is_wind_conv_servo_algorithm_open) // otworz okno
 	{
 		ApCreateModule(ABM_wnd_conveyor_servo_algorithm, widget, cbinfo);
-		ui.conveyor->is_wind_conv_servo_algorithm_open = 1;
+		interface.conveyor->is_wind_conv_servo_algorithm_open = 1;
 	} else { // przelacz na okno
 		PtWindowToFront(ABW_wnd_conveyor_servo_algorithm);
 	}
@@ -75,15 +72,14 @@ int start_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int close_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int close_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->is_wind_conv_servo_algorithm_open) {
+	if (interface.conveyor->is_wind_conv_servo_algorithm_open) {
 		PtDestroyWidget(ABW_wnd_conveyor_servo_algorithm);
 	}
 
@@ -91,18 +87,17 @@ int close_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int start_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int start_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (!ui.conveyor->is_wind_conveyor_moves_open) // otworz okno
+	if (!interface.conveyor->is_wind_conveyor_moves_open) // otworz okno
 	{
 		ApCreateModule(ABM_wnd_conveyor_moves, widget, cbinfo);
-		ui.conveyor->is_wind_conveyor_moves_open = true;
+		interface.conveyor->is_wind_conveyor_moves_open = true;
 	} else { // przelacz na okno
 		PtWindowToFront(ABW_wnd_conveyor_moves);
 	}
@@ -111,28 +106,26 @@ int start_wind_conveyor_moves(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int clear_wind_conveyor_moves_flag(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int clear_wind_conveyor_moves_flag(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	ui.conveyor->is_wind_conveyor_moves_open = false;
+	interface.conveyor->is_wind_conveyor_moves_open = false;
 	return (Pt_CONTINUE);
 
 }
 
-int clear_wnd_conveyor_servo_algorithm_flag(PtWidget_t *widget,
-		ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+int clear_wnd_conveyor_servo_algorithm_flag(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	ui.conveyor->is_wind_conv_servo_algorithm_open = false;
+	interface.conveyor->is_wind_conv_servo_algorithm_open = false;
 
 	return (Pt_CONTINUE);
 
@@ -140,55 +133,43 @@ int clear_wnd_conveyor_servo_algorithm_flag(PtWidget_t *widget,
 
 // dla robota conveyor
 
-int wind_conveyor_moves_init(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo) {
+int wind_conveyor_moves_init(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+{
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
 	// wychwytania ew. bledow ECP::robot
 	try {
-		if ((ui.conveyor->state.edp.pid != -1)
-				&& (ui.conveyor->is_wind_conveyor_moves_open)) {
-			if (ui.conveyor->state.edp.is_synchronised) // Czy robot jest zsynchronizowany?
+		if ((interface.conveyor->state.edp.pid != -1) && (interface.conveyor->is_wind_conveyor_moves_open)) {
+			if (interface.conveyor->state.edp.is_synchronised) // Czy robot jest zsynchronizowany?
 			{
-				ui.unblock_widget(
-						ABW_PtNumericFloat_wind_conveyor_moves_inc_pos);
-				ui.unblock_widget(ABW_PtButton_wind_conveyor_moves_inc_exec);
+				interface.unblock_widget(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos);
+				interface.unblock_widget(ABW_PtButton_wind_conveyor_moves_inc_exec);
 
-				ui.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_left);
-				ui.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_right);
-				ui.unblock_widget(
-						ABW_PtNumericFloat_wind_conveyor_moves_int_step);
-				ui.unblock_widget(
-						ABW_PtNumericFloat_wind_conveyor_moves_int_pos);
-				ui.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_exec);
+				interface.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_left);
+				interface.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_right);
+				interface.unblock_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_step);
+				interface.unblock_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_pos);
+				interface.unblock_widget(ABW_PtButton_wind_conveyor_moves_int_exec);
 
-				ui.conveyor->ui_ecp_robot->read_motors(
-						ui.conveyor->conveyor_current_pos); // Odczyt polozenia walow silnikow
+				interface.conveyor->ui_ecp_robot->read_motors(interface.conveyor->conveyor_current_pos); // Odczyt polozenia walow silnikow
 
-				PtSetResource(
-						ABW_PtNumericFloat_wind_conveyor_moves_read_motor_pos,
-						Pt_ARG_NUMERIC_VALUE,
-						&ui.conveyor->conveyor_current_pos[0], 0);
+				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_read_motor_pos, Pt_ARG_NUMERIC_VALUE, &interface.conveyor->conveyor_current_pos[0], 0);
 
-				ui.conveyor->ui_ecp_robot->read_joints(
-						ui.conveyor->conveyor_current_pos);
+				interface.conveyor->ui_ecp_robot->read_joints(interface.conveyor->conveyor_current_pos);
 
-				PtSetResource(
-						ABW_PtNumericFloat_wind_conveyor_moves_read_int_pos,
-						Pt_ARG_NUMERIC_VALUE,
-						&ui.conveyor->conveyor_current_pos[0], 0);
+				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_read_int_pos, Pt_ARG_NUMERIC_VALUE, &interface.conveyor->conveyor_current_pos[0], 0);
 
 			} else {
-				ui.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos);
-				ui.block_widget(ABW_PtButton_wind_conveyor_moves_inc_exec);
+				interface.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos);
+				interface.block_widget(ABW_PtButton_wind_conveyor_moves_inc_exec);
 
-				ui.block_widget(ABW_PtButton_wind_conveyor_moves_int_left);
-				ui.block_widget(ABW_PtButton_wind_conveyor_moves_int_right);
-				ui.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_step);
-				ui.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_pos);
-				ui.block_widget(ABW_PtButton_wind_conveyor_moves_int_exec);
+				interface.block_widget(ABW_PtButton_wind_conveyor_moves_int_left);
+				interface.block_widget(ABW_PtButton_wind_conveyor_moves_int_right);
+				interface.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_step);
+				interface.block_widget(ABW_PtNumericFloat_wind_conveyor_moves_int_pos);
+				interface.block_widget(ABW_PtButton_wind_conveyor_moves_int_exec);
 			}
 			PtDamageWidget(ABW_wnd_conveyor_moves);
 		}
@@ -198,8 +179,8 @@ int wind_conveyor_moves_init(PtWidget_t *widget, ApInfo_t *apinfo,
 	return (Pt_CONTINUE);
 }
 
-int conveyor_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo) {
+int conveyor_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+{
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
@@ -213,57 +194,40 @@ int conveyor_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo,
 	// wychwytania ew. bledow ECP::robot
 	try {
 
-		if (ui.conveyor->state.edp.pid != -1) {
+		if (interface.conveyor->state.edp.pid != -1) {
 
-			if ((((ApName(ApWidget(cbinfo))
-					== ABN_mm_conveyor_preset_position_synchro) || (ApName(
-					ApWidget(cbinfo))
-					== ABN_mm_all_robots_preset_position_synchro))
-					|| ((cbinfo->event->type == Ph_EV_KEY) && (my_data->key_cap
-							== 0x73)))
-					&& (ui.conveyor->state.edp.is_synchronised)) {
+			if ((((ApName(ApWidget(cbinfo)) == ABN_mm_conveyor_preset_position_synchro) || (ApName(ApWidget(cbinfo))
+					== ABN_mm_all_robots_preset_position_synchro)) || ((cbinfo->event->type == Ph_EV_KEY)
+					&& (my_data->key_cap == 0x73))) && (interface.conveyor->state.edp.is_synchronised)) {
 				// powrot do pozycji synchronizacji
-				for (int i = 0; i < CONVEYOR_NUM_OF_SERVOS; i++) {
-					ui.conveyor->conveyor_desired_pos[i] = 0.0;
+				for (int i = 0; i < lib::conveyor::NUM_OF_SERVOS; i++) {
+					interface.conveyor->conveyor_desired_pos[i] = 0.0;
 				}
 
-			} else if ((((ApName(ApWidget(cbinfo))
-					== ABN_mm_conveyor_preset_position_0) || (ApName(ApWidget(
-					cbinfo)) == ABN_mm_all_robots_preset_position_0))
-					|| ((cbinfo->event->type == Ph_EV_KEY) && (my_data->key_cap
-							== 0x30)))
-					&& (ui.conveyor->state.edp.is_synchronised)) {
+			} else if ((((ApName(ApWidget(cbinfo)) == ABN_mm_conveyor_preset_position_0) || (ApName(ApWidget(cbinfo))
+					== ABN_mm_all_robots_preset_position_0)) || ((cbinfo->event->type == Ph_EV_KEY)
+					&& (my_data->key_cap == 0x30))) && (interface.conveyor->state.edp.is_synchronised)) {
 				// ruch do pozycji zadania (wspolrzedne przyjete arbitralnie)
-				for (int i = 0; i < CONVEYOR_NUM_OF_SERVOS; i++) {
-					ui.conveyor->conveyor_desired_pos[i]
-							= ui.conveyor->state.edp.preset_position[0][i];
+				for (int i = 0; i < lib::conveyor::NUM_OF_SERVOS; i++) {
+					interface.conveyor->conveyor_desired_pos[i] = interface.conveyor->state.edp.preset_position[0][i];
 				}
-			} else if ((((ApName(ApWidget(cbinfo))
-					== ABN_mm_conveyor_preset_position_1) || (ApName(ApWidget(
-					cbinfo)) == ABN_mm_all_robots_preset_position_1))
-					|| ((cbinfo->event->type == Ph_EV_KEY) && (my_data->key_cap
-							== 0x31)))
-					&& (ui.conveyor->state.edp.is_synchronised)) {
+			} else if ((((ApName(ApWidget(cbinfo)) == ABN_mm_conveyor_preset_position_1) || (ApName(ApWidget(cbinfo))
+					== ABN_mm_all_robots_preset_position_1)) || ((cbinfo->event->type == Ph_EV_KEY)
+					&& (my_data->key_cap == 0x31))) && (interface.conveyor->state.edp.is_synchronised)) {
 				// ruch do pozycji zadania (wspolrzedne przyjete arbitralnie)
-				for (int i = 0; i < CONVEYOR_NUM_OF_SERVOS; i++) {
-					ui.conveyor->conveyor_desired_pos[i]
-							= ui.conveyor->state.edp.preset_position[1][i];
+				for (int i = 0; i < lib::conveyor::NUM_OF_SERVOS; i++) {
+					interface.conveyor->conveyor_desired_pos[i] = interface.conveyor->state.edp.preset_position[1][i];
 				}
-			} else if ((((ApName(ApWidget(cbinfo))
-					== ABN_mm_conveyor_preset_position_2) || (ApName(ApWidget(
-					cbinfo)) == ABN_mm_all_robots_preset_position_2))
-					|| ((cbinfo->event->type == Ph_EV_KEY) && (my_data->key_cap
-							== 0x32)))
-					&& (ui.conveyor->state.edp.is_synchronised)) {
+			} else if ((((ApName(ApWidget(cbinfo)) == ABN_mm_conveyor_preset_position_2) || (ApName(ApWidget(cbinfo))
+					== ABN_mm_all_robots_preset_position_2)) || ((cbinfo->event->type == Ph_EV_KEY)
+					&& (my_data->key_cap == 0x32))) && (interface.conveyor->state.edp.is_synchronised)) {
 				// ruch do pozycji zadania (wspolrzedne przyjete arbitralnie)
-				for (int i = 0; i < CONVEYOR_NUM_OF_SERVOS; i++) {
-					ui.conveyor->conveyor_desired_pos[i]
-							= ui.conveyor->state.edp.preset_position[2][i];
+				for (int i = 0; i < lib::conveyor::NUM_OF_SERVOS; i++) {
+					interface.conveyor->conveyor_desired_pos[i] = interface.conveyor->state.edp.preset_position[2][i];
 				}
 			}
 
-			ui.conveyor->ui_ecp_robot->move_motors(
-					ui.conveyor->conveyor_desired_pos);
+			interface.conveyor->ui_ecp_robot->move_motors(interface.conveyor->conveyor_desired_pos);
 
 		}
 
@@ -273,11 +237,10 @@ int conveyor_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo,
 	return (Pt_CONTINUE);
 }
 
-int wind_conveyor_moves_move(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo) {
+int wind_conveyor_moves_move(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+{
 
-	double *wektor_ptgr, conveyor_desired_pos_motors[6],
-			conveyor_desired_pos_int[6];
+	double *wektor_ptgr, conveyor_desired_pos_motors[6], conveyor_desired_pos_int[6];
 	double *step1;
 
 	/* eliminate 'unreferenced' warnings */
@@ -286,24 +249,21 @@ int wind_conveyor_moves_move(PtWidget_t *widget, ApInfo_t *apinfo,
 	// wychwytania ew. bledow ECP::robot
 	try {
 
-		if (ui.conveyor->state.edp.pid != -1) {
+		if (interface.conveyor->state.edp.pid != -1) {
 
 			// incremental
-			if ((widget == ABW_PtButton_wind_conveyor_moves_inc_left)
-					|| (widget == ABW_PtButton_wind_conveyor_moves_inc_right)
-					|| (widget == ABW_PtButton_wind_conveyor_moves_inc_exec)) {
+			if ((widget == ABW_PtButton_wind_conveyor_moves_inc_left) || (widget
+					== ABW_PtButton_wind_conveyor_moves_inc_right) || (widget
+					== ABW_PtButton_wind_conveyor_moves_inc_exec)) {
 
-				if (ui.conveyor->state.edp.is_synchronised) {
-					PtGetResource(
-							ABW_PtNumericFloat_wind_conveyor_moves_inc_pos,
-							Pt_ARG_NUMERIC_VALUE, &wektor_ptgr, 0);
+				if (interface.conveyor->state.edp.is_synchronised) {
+					PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos, Pt_ARG_NUMERIC_VALUE, &wektor_ptgr, 0);
 					conveyor_desired_pos_motors[0] = (*wektor_ptgr);
 				} else {
 					conveyor_desired_pos_motors[0] = 0.0;
 				}
 
-				PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_inc_step,
-						Pt_ARG_NUMERIC_VALUE, &step1, 0);
+				PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_inc_step, Pt_ARG_NUMERIC_VALUE, &step1, 0);
 
 				if (widget == ABW_PtButton_wind_conveyor_moves_inc_left) {
 					conveyor_desired_pos_motors[0] -= (*step1);
@@ -311,42 +271,34 @@ int wind_conveyor_moves_move(PtWidget_t *widget, ApInfo_t *apinfo,
 					conveyor_desired_pos_motors[0] += (*step1);
 				}
 
-				ui.conveyor->ui_ecp_robot->move_motors(
-						conveyor_desired_pos_motors);
+				interface.conveyor->ui_ecp_robot->move_motors(conveyor_desired_pos_motors);
 
 			}
 
 			// internal
-			if ((widget == ABW_PtButton_wind_conveyor_moves_int_left)
-					|| (widget == ABW_PtButton_wind_conveyor_moves_int_right)
-					|| (widget == ABW_PtButton_wind_conveyor_moves_int_exec)) {
-				if (ui.conveyor->state.edp.is_synchronised) {
-					PtGetResource(
-							ABW_PtNumericFloat_wind_conveyor_moves_int_pos,
-							Pt_ARG_NUMERIC_VALUE, &wektor_ptgr, 0);
+			if ((widget == ABW_PtButton_wind_conveyor_moves_int_left) || (widget
+					== ABW_PtButton_wind_conveyor_moves_int_right) || (widget
+					== ABW_PtButton_wind_conveyor_moves_int_exec)) {
+				if (interface.conveyor->state.edp.is_synchronised) {
+					PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_int_pos, Pt_ARG_NUMERIC_VALUE, &wektor_ptgr, 0);
 					conveyor_desired_pos_int[0] = (*wektor_ptgr);
 				}
 
-				PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_int_step,
-						Pt_ARG_NUMERIC_VALUE, &step1, 0);
+				PtGetResource(ABW_PtNumericFloat_wind_conveyor_moves_int_step, Pt_ARG_NUMERIC_VALUE, &step1, 0);
 
 				if (widget == ABW_PtButton_wind_conveyor_moves_int_left) {
 					conveyor_desired_pos_int[0] -= (*step1);
 				} else if (widget == ABW_PtButton_wind_conveyor_moves_int_right) {
 					conveyor_desired_pos_int[0] += (*step1);
 				}
-				ui.conveyor->ui_ecp_robot->move_joints(conveyor_desired_pos_int);
+				interface.conveyor->ui_ecp_robot->move_joints(conveyor_desired_pos_int);
 			}
 
 			// odswierzenie pozycji robota
-			if ((ui.conveyor->state.edp.is_synchronised)
-					&& (ui.conveyor->is_wind_conveyor_moves_open)) {
+			if ((interface.conveyor->state.edp.is_synchronised) && (interface.conveyor->is_wind_conveyor_moves_open)) {
 
-				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos,
-						Pt_ARG_NUMERIC_VALUE, &conveyor_desired_pos_motors[0],
-						0);
-				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_int_pos,
-						Pt_ARG_NUMERIC_VALUE, &conveyor_desired_pos_int[0], 0);
+				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_inc_pos, Pt_ARG_NUMERIC_VALUE, &conveyor_desired_pos_motors[0], 0);
+				PtSetResource(ABW_PtNumericFloat_wind_conveyor_moves_int_pos, Pt_ARG_NUMERIC_VALUE, &conveyor_desired_pos_int[0], 0);
 
 			}
 		}
@@ -356,8 +308,7 @@ int wind_conveyor_moves_move(PtWidget_t *widget, ApInfo_t *apinfo,
 	return (Pt_CONTINUE);
 }
 
-int EDP_conveyor_synchronise(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int EDP_conveyor_synchronise(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
@@ -366,15 +317,13 @@ int EDP_conveyor_synchronise(PtWidget_t *widget, ApInfo_t *apinfo,
 
 	//	EDP_irp6_postumentcreate_int(widget, apinfo, cbinfo);
 
-	ui.conveyor->eb.command(boost::bind(EDP_conveyor_synchronise_int, widget,
-			apinfo, cbinfo));
+	interface.conveyor->eb.command(boost::bind(EDP_conveyor_synchronise_int, widget, apinfo, cbinfo));
 
 	return (Pt_CONTINUE);
 
 }
 
-int EDP_conveyor_synchronise_int(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int EDP_conveyor_synchronise_int(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
@@ -387,51 +336,43 @@ int EDP_conveyor_synchronise_int(PtWidget_t *widget, ApInfo_t *apinfo,
 	try {
 		// dla robota irp6_on_track
 
-		if ((ui.conveyor->state.edp.state > 0)
-				&& (ui.conveyor->state.edp.is_synchronised == false)) {
-			ui.conveyor->ui_ecp_robot->ecp->synchronise();
-			ui.conveyor->state.edp.is_synchronised
-					= ui.conveyor->ui_ecp_robot->ecp->is_synchronised();
+		if ((interface.conveyor->state.edp.state > 0) && (interface.conveyor->state.edp.is_synchronised == false)) {
+			interface.conveyor->ui_ecp_robot->ecp->synchronise();
+			interface.conveyor->state.edp.is_synchronised = interface.conveyor->ui_ecp_robot->ecp->is_synchronised();
 		} else {
-			// 	printf("EDP conveyor niepowolane, synchronizacja niedozwolona\n");
+			// 	printf("edp conveyor niepowolane, synchronizacja niedozwolona\n");
 		}
 
 	} // end try
 	CATCH_SECTION_UI
 
 	// modyfikacje menu
-	ui.manage_interface();
+	interface.manage_interface();
 
 	return (Pt_CONTINUE);
 
 }
 
-int init_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int init_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	uint8_t servo_alg_no[CONVEYOR_NUM_OF_SERVOS];
-	uint8_t servo_par_no[CONVEYOR_NUM_OF_SERVOS];
+	uint8_t servo_alg_no[lib::conveyor::NUM_OF_SERVOS];
+	uint8_t servo_par_no[lib::conveyor::NUM_OF_SERVOS];
 
 	// wychwytania ew. bledow ECP::robot
 	try {
-		if (ui.conveyor->state.edp.pid != -1) {
-			if (ui.conveyor->state.edp.is_synchronised) // Czy robot jest zsynchronizowany?
+		if (interface.conveyor->state.edp.pid != -1) {
+			if (interface.conveyor->state.edp.is_synchronised) // Czy robot jest zsynchronizowany?
 			{
-				ui.conveyor->ui_ecp_robot->get_servo_algorithm(servo_alg_no,
-						servo_par_no);
+				interface.conveyor->ui_ecp_robot->get_servo_algorithm(servo_alg_no, servo_par_no);
 
-				PtSetResource(
-						ABW_PtNumericInteger_wnd_conv_servo_algorithm_read_alg_1,
-						Pt_ARG_NUMERIC_VALUE, servo_alg_no[0], 0);
+				PtSetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_read_alg_1, Pt_ARG_NUMERIC_VALUE, servo_alg_no[0], 0);
 
-				PtSetResource(
-						ABW_PtNumericInteger_wnd_conv_servo_algorithm_read_par_1,
-						Pt_ARG_NUMERIC_VALUE, servo_par_no[0], 0);
+				PtSetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_read_par_1, Pt_ARG_NUMERIC_VALUE, servo_par_no[0], 0);
 
 			} else {
 
@@ -444,37 +385,33 @@ int init_wnd_conveyor_servo_algorithm(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int conv_servo_algorithm_set(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int conv_servo_algorithm_set(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	uint8_t *servo_alg_no_tmp[CONVEYOR_NUM_OF_SERVOS];
-	uint8_t servo_alg_no_output[CONVEYOR_NUM_OF_SERVOS];
-	uint8_t *servo_par_no_tmp[CONVEYOR_NUM_OF_SERVOS];
-	uint8_t servo_par_no_output[CONVEYOR_NUM_OF_SERVOS];
+	uint8_t *servo_alg_no_tmp[lib::conveyor::NUM_OF_SERVOS];
+	uint8_t servo_alg_no_output[lib::conveyor::NUM_OF_SERVOS];
+	uint8_t *servo_par_no_tmp[lib::conveyor::NUM_OF_SERVOS];
+	uint8_t servo_par_no_output[lib::conveyor::NUM_OF_SERVOS];
 
 	// wychwytania ew. bledow ECP::robot
 	try {
-		if (ui.conveyor->state.edp.is_synchronised) {
+		if (interface.conveyor->state.edp.is_synchronised) {
 
-			PtGetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_alg_1,
-					Pt_ARG_NUMERIC_VALUE, &servo_alg_no_tmp[0], 0);
+			PtGetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_alg_1, Pt_ARG_NUMERIC_VALUE, &servo_alg_no_tmp[0], 0);
 
-			PtGetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_par_1,
-					Pt_ARG_NUMERIC_VALUE, &servo_par_no_tmp[0], 0);
+			PtGetResource(ABW_PtNumericInteger_wnd_conv_servo_algorithm_par_1, Pt_ARG_NUMERIC_VALUE, &servo_par_no_tmp[0], 0);
 
-			for (int i = 0; i < CONVEYOR_NUM_OF_SERVOS; i++) {
+			for (int i = 0; i < lib::conveyor::NUM_OF_SERVOS; i++) {
 				servo_alg_no_output[i] = *servo_alg_no_tmp[i];
 				servo_par_no_output[i] = *servo_par_no_tmp[i];
 			}
 
 			// zlecenie wykonania ruchu
-			ui.conveyor->ui_ecp_robot->set_servo_algorithm(servo_alg_no_output,
-					servo_par_no_output);
+			interface.conveyor->ui_ecp_robot->set_servo_algorithm(servo_alg_no_output, servo_par_no_output);
 
 		} else {
 		}
@@ -485,25 +422,22 @@ int conv_servo_algorithm_set(PtWidget_t *widget, ApInfo_t *apinfo,
 
 }
 
-int EDP_conveyor_create(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int EDP_conveyor_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->state.edp.state == 0) {
-		ui.conveyor->create_thread();
-		ui.conveyor->eb.command(boost::bind(EDP_conveyor_create_int, widget,
-				apinfo, cbinfo));
+	if (interface.conveyor->state.edp.state == 0) {
+		interface.conveyor->create_thread();
+		interface.conveyor->eb.command(boost::bind(EDP_conveyor_create_int, widget, apinfo, cbinfo));
 	}
 	return (Pt_CONTINUE);
 
 }
 
-int EDP_conveyor_create_int(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int EDP_conveyor_create_int(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
@@ -515,52 +449,44 @@ int EDP_conveyor_create_int(PtWidget_t *widget, ApInfo_t *apinfo,
 	try { // dla bledow robot :: ECP_error
 
 		// dla robota conveyor
-		if (ui.conveyor->state.edp.state == 0) {
-			ui.conveyor->state.edp.state = 0;
-			ui.conveyor->state.edp.is_synchronised = false;
+		if (interface.conveyor->state.edp.state == 0) {
+			interface.conveyor->state.edp.state = 0;
+			interface.conveyor->state.edp.is_synchronised = false;
 
 			std::string tmp_string("/dev/name/global/");
-			tmp_string += ui.conveyor->state.edp.hardware_busy_attach_point;
+			tmp_string += interface.conveyor->state.edp.hardware_busy_attach_point;
 
 			std::string tmp2_string("/dev/name/global/");
-			tmp2_string
-					+= ui.conveyor->state.edp.network_resourceman_attach_point;
+			tmp2_string += interface.conveyor->state.edp.network_resourceman_attach_point;
 
 			// sprawdzenie czy nie jest juz zarejestrowany zarzadca zasobow
-			if (((!(ui.conveyor->state.edp.test_mode)) && (access(
-					tmp_string.c_str(), R_OK) == 0)) || (access(
-					tmp2_string.c_str(), R_OK) == 0)) {
-				ui.ui_msg->message(lib::NON_FATAL_ERROR,
-						"edp_conveyor already exists");
-			} else if (ui.check_node_existence(
-					ui.conveyor->state.edp.node_name, std::string(
-							"edp_conveyor"))) {
-				ui.conveyor->state.edp.node_nr = ui.config->return_node_number(
-						ui.conveyor->state.edp.node_name.c_str());
+			if (((!(interface.conveyor->state.edp.test_mode)) && (access(tmp_string.c_str(), R_OK) == 0))
+					|| (access(tmp2_string.c_str(), R_OK) == 0)) {
+				interface.ui_msg->message(lib::NON_FATAL_ERROR, "edp_conveyor already exists");
+			} else if (interface.check_node_existence(interface.conveyor->state.edp.node_name, std::string("edp_conveyor"))) {
+				interface.conveyor->state.edp.node_nr
+						= interface.config->return_node_number(interface.conveyor->state.edp.node_name.c_str());
 				{
-					boost::unique_lock<boost::mutex> lock(
-							ui.process_creation_mtx);
-					ui.conveyor->ui_ecp_robot = new ui_tfg_and_conv_robot(
-							*ui.config, *ui.all_ecp_msg, lib::ROBOT_CONVEYOR);
+					boost::unique_lock <boost::mutex> lock(interface.process_creation_mtx);
+					interface.conveyor->ui_ecp_robot
+							= new ui::tfg_and_conv::EcpRobot(*interface.config, *interface.all_ecp_msg, lib::conveyor::ROBOT_NAME);
 
 				}
-				ui.conveyor->state.edp.pid
-						= ui.conveyor->ui_ecp_robot->ecp->get_EDP_pid();
+				interface.conveyor->state.edp.pid = interface.conveyor->ui_ecp_robot->ecp->get_EDP_pid();
 
-				if (ui.conveyor->state.edp.pid < 0) {
-					ui.conveyor->state.edp.state = 0;
-					fprintf(stderr, "EDP spawn failed: %s\n", strerror(errno));
-					delete ui.conveyor->ui_ecp_robot;
+				if (interface.conveyor->state.edp.pid < 0) {
+					interface.conveyor->state.edp.state = 0;
+					fprintf(stderr, "edp spawn failed: %s\n", strerror(errno));
+					delete interface.conveyor->ui_ecp_robot;
 				} else { // jesli spawn sie powiodl
-					ui.conveyor->state.edp.state = 1;
+					interface.conveyor->state.edp.state = 1;
 					short tmp = 0;
 					// kilka sekund  (~1) na otworzenie urzadzenia
-					while ((ui.conveyor->state.edp.reader_fd
-							= name_open(
-									ui.conveyor->state.edp.network_reader_attach_point.c_str(),
-									NAME_FLAG_ATTACH_GLOBAL)) < 0)
-						if ((tmp++) < CONNECT_RETRY)
-							delay(CONNECT_DELAY);
+					while ((interface.conveyor->state.edp.reader_fd
+							= name_open(interface.conveyor->state.edp.network_reader_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL))
+							< 0)
+						if ((tmp++) < lib::CONNECT_RETRY)
+							delay(lib::CONNECT_DELAY);
 						else {
 							perror("blad odwolania do READER_C");
 							break;
@@ -568,12 +494,10 @@ int EDP_conveyor_create_int(PtWidget_t *widget, ApInfo_t *apinfo,
 
 					// odczytanie poczatkowego stanu robota (komunikuje sie z EDP)
 					lib::controller_state_t robot_controller_initial_state_tmp;
-					ui.conveyor->ui_ecp_robot->get_controller_state(
-							robot_controller_initial_state_tmp);
+					interface.conveyor->ui_ecp_robot->get_controller_state(robot_controller_initial_state_tmp);
 
-					//ui.conveyor->state.edp.state = 1; // edp wlaczone reader czeka na start
-					ui.conveyor->state.edp.is_synchronised
-							= robot_controller_initial_state_tmp.is_synchronised;
+					//interface.conveyor->state.edp.state = 1; // edp wlaczone reader czeka na start
+					interface.conveyor->state.edp.is_synchronised = robot_controller_initial_state_tmp.is_synchronised;
 				}
 			}
 		}
@@ -581,14 +505,13 @@ int EDP_conveyor_create_int(PtWidget_t *widget, ApInfo_t *apinfo,
 	} // end try
 	CATCH_SECTION_UI
 
-	ui.manage_interface();
+	interface.manage_interface();
 
 	return (Pt_CONTINUE);
 
 }
 
-int EDP_conveyor_slay(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int EDP_conveyor_slay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
@@ -597,58 +520,54 @@ int EDP_conveyor_slay(PtWidget_t *widget, ApInfo_t *apinfo,
 
 	//	EDP_irp6_postumentcreate_int(widget, apinfo, cbinfo);
 
-	ui.conveyor->EDP_slay_int();
+	interface.conveyor->EDP_slay_int();
 	return (Pt_CONTINUE);
 
 }
 
-int pulse_reader_conv_start(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int pulse_reader_conv_start(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->pulse_reader_start_exec_pulse())
+	if (interface.conveyor->pulse_reader_start_exec_pulse())
 		process_control_window_init(widget, apinfo, cbinfo);
 
 	return (Pt_CONTINUE);
 
 }
 
-int pulse_reader_conv_stop(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int pulse_reader_conv_stop(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->pulse_reader_stop_exec_pulse())
+	if (interface.conveyor->pulse_reader_stop_exec_pulse())
 		process_control_window_init(widget, apinfo, cbinfo);
 
 	return (Pt_CONTINUE);
 
 }
 
-int pulse_reader_conv_trigger(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int pulse_reader_conv_trigger(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->pulse_reader_trigger_exec_pulse())
+	if (interface.conveyor->pulse_reader_trigger_exec_pulse())
 		process_control_window_init(widget, apinfo, cbinfo);
 
 	return (Pt_CONTINUE);
 
 }
 
-int pulse_ecp_conveyor(PtWidget_t *widget, ApInfo_t *apinfo,
-		PtCallbackInfo_t *cbinfo)
+int pulse_ecp_conveyor(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
@@ -658,36 +577,33 @@ int pulse_ecp_conveyor(PtWidget_t *widget, ApInfo_t *apinfo,
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	if (ui.conveyor->state.edp.is_synchronised > 0) { // o ile ECP dziala (sprawdzanie poprzez dzialanie odpowiedniego EDP)
-		if (ui.conveyor->state.ecp.trigger_fd < 0) {
+	if (interface.conveyor->state.edp.is_synchronised > 0) { // o ile ECP dziala (sprawdzanie poprzez dzialanie odpowiedniego EDP)
+		if (interface.conveyor->state.ecp.trigger_fd < 0) {
 
 			short tmp = 0;
 			// kilka sekund  (~1) na otworzenie urzadzenia
 			// zabezpieczenie przed zawieszeniem poprzez wyslanie sygnalu z opoznieniem
-			ualarm((useconds_t) (SIGALRM_TIMEOUT), 0);
-			while ((ui.conveyor->state.ecp.trigger_fd
-					= name_open(
-							ui.conveyor->state.ecp.network_trigger_attach_point.c_str(),
-							NAME_FLAG_ATTACH_GLOBAL)) < 0) {
+			ualarm(ui::common::SIGALRM_TIMEOUT, 0);
+			while ((interface.conveyor->state.ecp.trigger_fd
+					= name_open(interface.conveyor->state.ecp.network_trigger_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL))
+					< 0) {
 				if (errno == EINTR)
 					break;
-				if ((tmp++) < CONNECT_RETRY)
-					delay(CONNECT_DELAY);
+				if ((tmp++) < lib::CONNECT_RETRY)
+					delay(lib::CONNECT_DELAY);
 				else {
 					perror("blad odwolania do ECP_TRIGGER");
 				}
 			}
 			// odwolanie alarmu
-			ualarm((useconds_t) (0), 0);
+			ualarm((useconds_t)(0), 0);
 		}
 
-		if (ui.conveyor->state.ecp.trigger_fd >= 0) {
-			if (MsgSendPulse(ui.conveyor->state.ecp.trigger_fd,
-					sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value)
+		if (interface.conveyor->state.ecp.trigger_fd >= 0) {
+			if (MsgSendPulse(interface.conveyor->state.ecp.trigger_fd, sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value)
 					== -1) {
 
-				fprintf(stderr, "Blad w wysylaniu pulsu do ecp error: %s \n",
-						strerror(errno));
+				fprintf(stderr, "Blad w wysylaniu pulsu do ecp error: %s \n", strerror(errno));
 				delay(1000);
 			}
 		} else {

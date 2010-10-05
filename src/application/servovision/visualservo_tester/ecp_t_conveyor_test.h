@@ -10,7 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "ecp/common/task/ecp_task.h"
+#include "base/ecp/ecp_task.h"
 #include "ecp_g_conveyor_sinus.h"
 
 using boost::shared_ptr;
@@ -24,6 +24,13 @@ namespace conveyor {
 
 namespace task {
 
+/** @addtogroup servovision
+ *  @{
+ */
+
+/**
+ *
+ */
 class ecp_t_conveyor_test : public mrrocpp::ecp::common::task::task
 {
 public:
@@ -33,6 +40,8 @@ public:
 private:
 	boost::shared_ptr<ecp_g_conveyor_sinus> sinus_gen;
 };
+
+/** @} */
 
 } //namespace
 

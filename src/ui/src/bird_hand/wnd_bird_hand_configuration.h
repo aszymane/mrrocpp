@@ -8,8 +8,16 @@
 #ifndef __WND_BIRD_HAND_CONFIGURATION_H
 #define __WND_BIRD_HAND_CONFIGURATION_H
 
-#include "ui/ui.h"
-#include "ui/ui_robot.h"
+#include "ui/src/ui.h"
+#include "ui/src/ui_robot.h"
+
+namespace mrrocpp {
+namespace ui {
+namespace common {
+class Interface;
+}
+
+namespace bird_hand {
 
 //
 //
@@ -20,24 +28,30 @@
 
 // super klasa agregujaca porozrzucane struktury
 
-class Ui;
-class UiRobotBirdHand;
 
-class WndBirdHandConfiguration {
+class UiRobot;
+
+class WndConfiguration
+{
 private:
-	Ui& ui;
-	UiRobotBirdHand& bird_hand;
+	common::Interface& interface;
+	UiRobot& bird_hand;
 
 public:
 	bool is_open;
 
-	WndBirdHandConfiguration(Ui& _ui, UiRobotBirdHand& _bird_hand);
+	WndConfiguration(common::Interface& _interface, UiRobot& _bird_hand);
 
 	int get_configuration();
 	int set_configuration();
 	int copy_command();
 
 };
+
+}
+} //namespace ui
+} //namespace mrrocpp
+
 
 #endif
 

@@ -1,16 +1,16 @@
 #if !defined(_VSP_TIME_SENSOR_H)
 #define _VSP_TIME_SENSOR_H
 
-#include <time.h>
+#include <ctime>
 
-#include "vsp/common/vsp_sensor.h"
+#include "base/vsp/vsp_sensor.h"
 
 namespace mrrocpp {
 namespace vsp {
 namespace sensor {
 
 /********** klasa czujnikow po stronie VSP **************/
-class time : public sensor<struct timespec> {
+class time : public mrrocpp::vsp::common::sensor<struct timespec> {
 public:
     // Konstruktor czujnika wirtualnego.
     time (lib::configurator &_config);

@@ -8,8 +8,19 @@
 #ifndef __UI_R_POLYCRANK_H
 #define __UI_R_POLYCRANK_H
 
-#include "ui/ui.h"
-#include "ui/ui_robot.h"
+#include "ui/src/ui.h"
+#include "ui/src/ui_robot.h"
+
+namespace mrrocpp {
+namespace ui {
+namespace common {
+class Interface;
+}
+
+namespace irp6 {
+class EcpRobot;
+}
+namespace polycrank {
 
 //
 //
@@ -18,12 +29,8 @@
 //
 
 
-// super klasa agregujaca porozrzucane struktury
-
-class Ui;
-class ui_irp6_common_robot;
-
-class UiRobotPolycrank: public UiRobot {
+class UiRobot : public common::UiRobot
+{
 private:
 
 public:
@@ -32,14 +39,18 @@ public:
 	bool is_wind_polycrank_inc_open; // informacja czy okno ruchow w radianach na wale silnika jest otwarte
 
 
-	ui_irp6_common_robot *ui_ecp_robot;
+	irp6::EcpRobot *ui_ecp_robot;
 
-	UiRobotPolycrank(Ui& _ui);
+	UiRobot(common::Interface& _interface);
 	int reload_configuration();
 	int manage_interface();
 	int delete_ui_ecp_robot();
 
 };
+
+}
+} //namespace ui
+} //namespace mrrocpp
 
 #endif
 

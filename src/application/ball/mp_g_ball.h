@@ -7,10 +7,9 @@
 #if !defined(__MP_GEN_HAPTIC_H)
 #define __MP_GEN_HAPTIC_H
 
-#include "lib/mrmath/mrmath.h"
+#include "base/lib/mrmath/mrmath.h"
 
-#include "mp/generator/mp_generator.h"
-#include "mp/robot/mp_robot.h"
+#include "base/mp/generator/mp_generator.h"
 
 namespace mrrocpp {
 namespace mp {

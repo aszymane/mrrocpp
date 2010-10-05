@@ -1,35 +1,33 @@
 // -------------------------------------------------------------------------
-//                            ui.h
 // Definicje struktur danych i metod dla procesu UI
-//
-// Ostatnia modyfikacja: 16.04.98
 // -------------------------------------------------------------------------
 
 #ifndef __UI_ECP_H
 #define __UI_ECP_H
 
-#include <boost/function.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/circular_buffer.hpp>
+#include <boost/thread/thread.hpp>
 #include <stdexcept>
 #include <iostream>
 #include <string>
 #include <list>
 
-#include "lib/com_buf.h"
-#include "lib/srlib.h"
-#include "lib/mis_fun.h"
+#include "base/lib/com_buf.h"
+#include "base/lib/sr/srlib.h"
+#include "base/lib/condition_synchroniser.h"
 
-#include "ui/ui.h"
+#include "ui/src/ui.h"
 
-/**************************** ui_ecp_buffer *****************************/
+namespace mrrocpp {
+namespace ui {
+namespace common {
 
-class ui_ecp_buffer  : public boost::noncopyable{
+/**************************** ecp_buffer *****************************/
+
+class ecp_buffer : public boost::noncopyable
+{
 private:
-
-	Ui& ui;
-	boost::thread *thread_id;
+	Interface& interface;
+	boost::thread thread_id;
 
 public:
 	UI_ECP_COMMUNICATION_STATE communication_state;
@@ -40,10 +38,15 @@ public:
 	void operator()();
 
 	lib::condition_synchroniser synchroniser;
-	ui_ecp_buffer(Ui& _ui);
-	~ui_ecp_buffer();
 
+	ecp_buffer(Interface& _interface);
+
+	~ecp_buffer();
 };
+
+}
+} //namespace ui
+} //namespace mrrocpp
 
 #endif
 

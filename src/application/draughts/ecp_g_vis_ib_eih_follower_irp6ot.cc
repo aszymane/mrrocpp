@@ -5,8 +5,10 @@
  *      Author: rtulwin
  */
 
-#include <math.h>
+#include <cmath>
 
+#include "base/ecp/ecp_task.h"
+#include "base/ecp/ecp_robot.h"
 #include "ecp_g_vis_ib_eih_follower_irp6ot.h"
 
 namespace mrrocpp {
@@ -14,9 +16,9 @@ namespace ecp {
 namespace irp6ot_m {
 namespace generator {
 
-ecp_vis_ib_eih_follower_irp6ot::ecp_vis_ib_eih_follower_irp6ot(
-		common::task::task& _ecp_task) :
-	common::generator::ecp_visual_servo(_ecp_task) {
+ecp_vis_ib_eih_follower_irp6ot::ecp_vis_ib_eih_follower_irp6ot(common::task::task& _ecp_task) :
+	common::generator::ecp_visual_servo(_ecp_task)
+{
 	//v_max[1] = v_max[0] = 0.020;
 	//a_max[1] = a_max[0] = 0.025;
 	v_max[1] = v_max[0] = 0.02;
@@ -28,9 +30,10 @@ ecp_vis_ib_eih_follower_irp6ot::ecp_vis_ib_eih_follower_irp6ot(
 	s_z = 0.35;
 }
 
-bool ecp_vis_ib_eih_follower_irp6ot::first_step() {
+bool ecp_vis_ib_eih_follower_irp6ot::first_step()
+{
 
-	//vsp_fradia = dynamic_cast<ecp_mp::sensor:fradia_sensor<tracker> *> (sensor_m[lib::SENSOR_CVFRADIA]);
+	//vsp_fradia = dynamic_cast<ecp_mp::sensor:fradia_sensor<tracker> *> (sensor_m[ecp_mp::sensor::SENSOR_CVFRADIA]);
 
 	the_robot->ecp_command.instruction.instruction_type = lib::GET;
 	the_robot->ecp_command.instruction.get_type = ARM_DEFINITION;
@@ -43,14 +46,13 @@ bool ecp_vis_ib_eih_follower_irp6ot::first_step() {
 	the_robot->ecp_command.instruction.value_in_step_no = MOTION_STEPS - 2;
 
 	for (int i = 0; i < 6; i++) {
-		the_robot->ecp_command.instruction.arm.pf_def.behaviour[i]
-				= lib::UNGUARDED_MOTION;
+		the_robot->ecp_command.instruction.arm.pf_def.behaviour[i] = lib::UNGUARDED_MOTION;
 	}
 
 	// TODO: fix this
 	//vsp_fradia->configure_fradia_task(ecp_mp::sensor::WITHOUT_ROTATION);
 
-	first_move =  true;
+	first_move = true;
 	z_s = 0;
 	z_stop = false;
 	reached[0] = false;
@@ -59,13 +61,14 @@ bool ecp_vis_ib_eih_follower_irp6ot::first_step() {
 	dir[1] = 1;
 	v_max[1] = v_max[0] = 0.02;
 
-	ecp_t.sr_ecp_msg->message("PIERWSZY");
+	sr_ecp_msg.message("PIERWSZY");
 
 	return true;
 
 }
 
-bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
+bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints()
+{
 
 	the_robot->ecp_command.instruction.instruction_type = lib::SET_GET;
 
@@ -75,9 +78,7 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 
 		//printf("poczatek sledzenia\n");
 		//flushall();
-		memcpy(next_position,
-				the_robot->reply_package.arm.pf_def.arm_coordinates, 6
-						* sizeof(double));
+		memcpy(next_position, the_robot->reply_package.arm.pf_def.arm_coordinates, 6 * sizeof(double));
 
 		//next_position[6] = the_robot->reply_package.arm.pf_def.gripper_coordinate;
 
@@ -139,21 +140,19 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 
 	//alpha = the_robot->reply_package.arm.pf_def.arm_coordinates[1]- the_robot->reply_package.arm.pf_def.arm_coordinates[6];
 	//Uchyb wyrazony w pikselach.
-	u[0] = vsp_fradia->get_reading_message().x-20;
+	u[0] = vsp_fradia->get_reading_message().x - 20;
 	u[1] = vsp_fradia->get_reading_message().y;
 	bool tracking = vsp_fradia->get_reading_message().tracking;
 
 	printf("ux: %f\t", u[0]);
 	printf("uy: %f\n", u[1]);
 
-	lib::VSP_REPORT_t vsp_report = vsp_fradia->get_report();
-	if (vsp_report == lib::VSP_REPLY_OK) {
+	lib::sensor::VSP_REPORT_t vsp_report = vsp_fradia->get_report();
+	if (vsp_report == lib::sensor::VSP_REPLY_OK) {
 
-		if (fabs(u[0]) < 20 && fabs(u[1]) < 20 && v[0] <= v_stop[0] && v[1]
-				<= v_stop[1]) {
+		if (fabs(u[0]) < 20 && fabs(u[1]) < 20 && v[0] <= v_stop[0] && v[1] <= v_stop[1]) {
 			if (z_stop) {
-				printf(
-						"#################################### koniec sledzenia ##################################\n");
+				printf("#################################### koniec sledzenia ##################################\n");
 				flushall();
 				return false;
 			}
@@ -179,9 +178,7 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 
 			if (fabs(u[i]) < 20) {
 				reached[i] = true;
-				printf(
-						"==================================== reached true w osi %d\n",
-						i);
+				printf("==================================== reached true w osi %d\n", i);
 			} else {
 				reached[i] = false;
 			}
@@ -197,12 +194,10 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 				}
 			}
 
-			printf(
-					"v_max: %f\t v: %f\t change: %d\t reached: %d\t tracking: %d\n",
-					v_max[i], v[i], change[i], reached[i], tracking);
+			printf("v_max: %f\t v: %f\t change: %d\t reached: %d\t tracking: %d\n", v_max[i], v[i], change[i], reached[i], tracking);
 
-			if (tracking == true && (v[i] == 0 || (v[i] > 0 && v[i] < v_max[i]
-					&& change[i] == false && reached[i] == false))) {//przyspieszanie
+			if (tracking == true && (v[i] == 0 || (v[i] > 0 && v[i] < v_max[i] && change[i] == false && reached[i]
+					== false))) {//przyspieszanie
 				if (v[i] == 0 && change[i] == true) {
 					change[i] = false;
 				}
@@ -216,10 +211,9 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 				}
 
 				printf("przysp\n"); //porownywanie double jest spieprzone wiec musi byc tak...			// ta czesc warunku sprawia ze wchodzi w jednostajny przy osiagnieciu maks speeda
-			} else if (v[i] > 0 && (change[i] == true || reached[i] == true
-					|| tracking == false || (v[i] - v_max[i]) > 0.0001)) { //|| v[i] > v_max[i]) && !(v[i] == v_max[i] && change[i] == false && reached[i] == false && tracking == true)) {//hamowanie
-				if (v[i] > v_max[i] && (v[i] - v_max[i]) / t < a_max[i]
-						&& change[i] == false && reached[i] == false
+			} else if (v[i] > 0 && (change[i] == true || reached[i] == true || tracking == false || (v[i] - v_max[i])
+					> 0.0001)) { //|| v[i] > v_max[i]) && !(v[i] == v_max[i] && change[i] == false && reached[i] == false && tracking == true)) {//hamowanie
+				if (v[i] > v_max[i] && (v[i] - v_max[i]) / t < a_max[i] && change[i] == false && reached[i] == false
 						&& tracking == true) {
 					v[i] = v_max[i];
 					s[i] = (((v[i] - v_max[i]) / t) * t * t) / 2 + (v[i] * t);
@@ -251,17 +245,14 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 	 }*/
 	next_position[6] = 0.0;
 
-	homog_matrix.set_from_xyz_angle_axis(lib::Xyz_Angle_Axis_vector(
-			next_position));
-	homog_matrix.get_frame_tab(
-			the_robot->ecp_command.instruction.arm.pf_def.arm_frame);
+	homog_matrix.set_from_xyz_angle_axis(lib::Xyz_Angle_Axis_vector(next_position));
+	homog_matrix.get_frame_tab(the_robot->ecp_command.instruction.arm.pf_def.arm_frame);
 
 	//memcpy(the_robot->ecp_command.instruction.arm.pf_def.arm_coordinates, next_position,
 	//		6 * sizeof(double));
 
 
-	printf("s_x: %f\t s_y %f\t s_z: %f\n", next_position[0], next_position[1],
-			next_position[2]);
+	printf("s_x: %f\t s_y %f\t s_z: %f\n", next_position[0], next_position[1], next_position[2]);
 
 	printf("\n");
 	for (int k = 0; k < 3; k++) {
@@ -269,21 +260,19 @@ bool ecp_vis_ib_eih_follower_irp6ot::next_step_without_constraints() {
 	}
 	printf("\n\n");
 
-	memcpy(next_position, the_robot->reply_package.arm.pf_def.arm_coordinates,
-			6 * sizeof(double));
+	memcpy(next_position, the_robot->reply_package.arm.pf_def.arm_coordinates, 6 * sizeof(double));
 	for (int i = 0; i < 6; i++) {
 		//	printf("%f\t", next_position[i]);
 		next_position[i] = 0;
 	}
 	next_position[6] = 0;
 
-	printf(
-			"\n*********************************************************************************\n");
+	printf("\n*********************************************************************************\n");
 	return true;
 }
 
-void ecp_vis_ib_eih_follower_irp6ot::reduce_velocity(double a, double t,
-		double s, int i) {
+void ecp_vis_ib_eih_follower_irp6ot::reduce_velocity(double a, double t, double s, int i)
+{
 
 	double delta;//delta w rownaniu kwadratowym
 
@@ -292,7 +281,8 @@ void ecp_vis_ib_eih_follower_irp6ot::reduce_velocity(double a, double t,
 	v_max[i] = (-(2 * a * t) + sqrt(delta)) / (-4);
 }
 
-void ecp_vis_ib_eih_follower_irp6ot::limit_step() {
+void ecp_vis_ib_eih_follower_irp6ot::limit_step()
+{
 
 }
 

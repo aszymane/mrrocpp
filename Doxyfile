@@ -1,4 +1,4 @@
-# Doxyfile 1.5.8
+# Doxyfile 1.6.1
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project
@@ -14,7 +14,6 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 
-# This tag specifies the encoding used for all characters in the config file 
 # that follow. The default is UTF-8 which is also the encoding used for all 
 # text before the first occurrence of this tag. Doxygen uses libiconv (or the 
 # iconv built into libc) for the transcoding. See 
@@ -25,7 +24,7 @@ DOXYFILE_ENCODING      = UTF-8
 # The PROJECT_NAME tag is a single word (or a sequence of words surrounded 
 # by quotes) that should identify the project.
 
-PROJECT_NAME           = " Self Reconfigurable Intelligent Swarm Fixtures FP7-214678       . Deliverable 4.1 low level control system documentation"
+PROJECT_NAME           = "Multi-Robot Research Oriented Controller"
 
 # The PROJECT_NUMBER tag can be used to enter a project or revision number. 
 # This could be handy for archiving the generated documentation or 
@@ -54,11 +53,11 @@ CREATE_SUBDIRS         = NO
 # information to generate all constant output in the proper language. 
 # The default language is English, other supported languages are: 
 # Afrikaans, Arabic, Brazilian, Catalan, Chinese, Chinese-Traditional, 
-# Croatian, Czech, Danish, Dutch, Farsi, Finnish, French, German, Greek, 
-# Hungarian, Italian, Japanese, Japanese-en (Japanese with English messages), 
-# Korean, Korean-en, Lithuanian, Norwegian, Macedonian, Persian, Polish, 
-# Portuguese, Romanian, Russian, Serbian, Serbian-Cyrilic, Slovak, Slovene, 
-# Spanish, Swedish, and Ukrainian.
+# Croatian, Czech, Danish, Dutch, Esperanto, Farsi, Finnish, French, German, 
+# Greek, Hungarian, Italian, Japanese, Japanese-en (Japanese with English 
+# messages), Korean, Korean-en, Lithuanian, Norwegian, Macedonian, Persian, 
+# Polish, Portuguese, Romanian, Russian, Serbian, Serbian-Cyrilic, Slovak, 
+# Slovene, Spanish, Swedish, Ukrainian, and Vietnamese.
 
 OUTPUT_LANGUAGE        = English
 
@@ -224,7 +223,8 @@ OPTIMIZE_OUTPUT_VHDL   = NO
 # the parsers supported by doxygen: IDL, Java, Javascript, C#, C, C++, D, PHP, 
 # Objective-C, Python, Fortran, VHDL, C, C++. For instance to make doxygen treat 
 # .inc files as Fortran files (default is PHP), and .f files as C (default is Fortran), 
-# use: inc=Fortran f=C
+# use: inc=Fortran f=C. Note that for custom extensions you also need to set
+# FILE_PATTERNS otherwise the files are not read by doxygen.
 
 EXTENSION_MAPPING      = 
 
@@ -415,6 +415,16 @@ SORT_MEMBER_DOCS       = YES
 
 SORT_BRIEF_DOCS        = NO
 
+# If the SORT_MEMBERS_CTORS_1ST tag is set to YES then doxygen
+# will sort the (brief and detailed) documentation of class members so that
+# constructors and destructors are listed first. If set to NO (the default)
+# the constructors will appear in the respective orders defined by
+# SORT_MEMBER_DOCS and SORT_BRIEF_DOCS.
+# This tag will be ignored for brief docs if SORT_BRIEF_DOCS is set to NO
+# and ignored for detailed docs if SORT_MEMBER_DOCS is set to NO.
+
+SORT_MEMBERS_CTORS_1ST = NO
+
 # If the SORT_GROUP_NAMES tag is set to YES then doxygen will sort the 
 # hierarchy of group names into alphabetical order. If set to NO (the default) 
 # the group names will appear in their defined order.
@@ -573,31 +583,53 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = \
-			 src/edp/common/edp_e_manip.h \
-			 src/edp/common/edp_e_motor_driven.h \
-			 src/edp/common/edp_effector.h \
-			 src/edp/smb/ \
-			 src/edp/shead/ \
-			 src/edp/spkm/ \
-			 src/edp/epos/ \
-			 src/kinematics/common/ \
-			 src/kinematics/spkm/
-			 #src/edp/common/edp_force_sensor.cc \
-			 #src/edp/common/edp_force_sensor.h \
-			 #src/edp/common/edp_irp6s_postument_track.cc \
-			 #src/edp/common/edp_irp6s_postument_track.h \
-			 #src/edp/common/edp_vsp_t.cc \
-			 #src/edp/common/edp_vsp_t.h \
-			 #src/edp/common/hi_rydz.cc \
-			 #src/edp/common/hi_rydz.h \
-			 #src/edp/common/in_out.cc \
-			 #src/edp/common/in_out.h \
-			 #src/edp/common/int_hand_suplement.cc \
-			 #src/edp/common/regulator.cc \
-			 #src/edp/common/regulator.h \
-			 #src/edp/common/vis_server.cc \
-			 #src/edp/common/vis_server.h \
+INPUT                  = src/base \
+                         src/generator/generators.dox \
+                         src/generator/ecp/ecp_g_teach_in.h \
+                         src/generator/ecp/ecp_g_teach_in.cc \
+                         src/generator/ecp/force/ecp_mp_g_bias_edp_force.h \
+                         src/generator/ecp/force/ecp_g_bias_edp_force.h \
+                         src/generator/ecp/force/ecp_g_bias_edp_force.cc \
+                         src/generator/ecp/force/ecp_mp_g_tff_nose_run.h \                   
+                         src/generator/ecp/force/ecp_g_tff_nose_run.h \
+                         src/generator/ecp/force/ecp_g_tff_nose_run.cc \
+                         src/generator/ecp/trajectory_interpolator \
+                         src/generator/ecp/velocity_profile_calculator \
+                         src/generator/ecp/ecp_g_multiple_position.h \
+                         src/generator/ecp/ecp_g_constant_velocity.cc \
+                         src/generator/ecp/ecp_g_constant_velocity.h \
+                         src/generator/ecp/ecp_g_get_position.cc \
+                         src/generator/ecp/ecp_g_get_position.h \
+                         src/generator/ecp/ecp_g_newsmooth.cc \
+                         src/generator/ecp/ecp_g_newsmooth.h \
+                         src/subtask/subtasks.dox \
+                         src/subtask/ecp_st_bias_edp_force.h \
+                         src/subtask/ecp_st_bias_edp_force.cc \
+                         src/subtask/ecp_mp_st_bias_edp_force.h \
+                         src/subtask/ecp_st_tff_nose_run.h \
+                         src/subtask/ecp_st_tff_nose_run.cc \
+                         src/subtask/ecp_mp_st_tff_nose_run.h \
+                         src/robot/robots.dox \
+                         src/robot/conveyor \ 
+                         src/robot/irp6_tfg \ 
+                         src/robot/bird_hand \ 
+                         src/robot/irp6ot_tfg \ 
+                         src/robot/irp6ot_m \ 
+                         src/robot/irp6p_tfg \ 
+                         src/robot/irp6p_m \ 
+                         src/robot/shead \ 
+                         src/robot/smb \ 
+                         src/robot/spkm \ 
+                         src/robot/sarkofag \ 
+                         src/robot/epos \ 
+                         src/robot/hi_moxa \ 
+                         src/robot/hi_rydz \ 
+	                     src/sensor/sensors.dox \
+                         src/sensor/fradia \
+                         src/sensor/pcbird \
+                         src/application/applications.dox \
+                         src/application/edge_follow \
+                     
 
 # This tag can be used to specify the character encoding of the source files 
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is 
@@ -1009,20 +1041,18 @@ ENUM_VALUES_PER_LINE   = 4
 
 # The GENERATE_TREEVIEW tag is used to specify whether a tree-like index 
 # structure should be generated to display hierarchical information. 
-# If the tag value is set to FRAME, a side panel will be generated 
+# If the tag value is set to YES, a side panel will be generated 
 # containing a tree-like index structure (just like the one that 
 # is generated for HTML Help). For this to work a browser that supports 
-# JavaScript, DHTML, CSS and frames is required (for instance Mozilla 1.0+, 
-# Netscape 6.0+, Internet explorer 5.0+, or Konqueror). Windows users are 
-# probably better off using the HTML help feature. Other possible values 
-# for this tag are: HIERARCHIES, which will generate the Groups, Directories, 
-# and Class Hierarchy pages using a tree view instead of an ordered list; 
-# ALL, which combines the behavior of FRAME and HIERARCHIES; and NONE, which 
-# disables this behavior completely. For backwards compatibility with previous 
-# releases of Doxygen, the values YES and NO are equivalent to FRAME and NONE 
-# respectively.
+# JavaScript, DHTML, CSS and frames is required (i.e. any modern browser). 
+# Windows users are probably better off using the HTML help feature.
 
 GENERATE_TREEVIEW      = NO
+
+# By enabling USE_INLINE_TREES, doxygen will generate the Groups, Directories, 
+# and Class Hierarchy pages using a tree view instead of an ordered list.
+
+USE_INLINE_TREES       = NO
 
 # If the treeview is enabled (see GENERATE_TREEVIEW) then this tag can be 
 # used to set the initial width (in pixels) of the frame in which the tree 
@@ -1037,6 +1067,15 @@ TREEVIEW_WIDTH         = 250
 # to force them to be regenerated.
 
 FORMULA_FONTSIZE       = 10
+
+# When the SEARCHENGINE tag is enable doxygen will generate a search box
+# for the HTML output. The underlying search engine uses javascript 
+# and DHTML and should work on any modern browser. Note that when using
+# HTML help (GENERATE_HTMLHELP) or Qt help (GENERATE_QHP) 
+# there is already a search function so this one should typically 
+# be disabled.
+
+SEARCHENGINE           = NO
 
 #---------------------------------------------------------------------------
 # configuration options related to the LaTeX output
@@ -1113,6 +1152,13 @@ LATEX_BATCHMODE        = NO
 # in the output.
 
 LATEX_HIDE_INDICES     = NO
+
+# If LATEX_SOURCE_CODE is set to YES then doxygen will include
+# source code with syntax highlighting in the LaTeX output.
+# Note that which sources are shown also depends on other settings
+# such as SOURCE_BROWSER.
+
+LATEX_SOURCE_CODE      = NO
 
 #---------------------------------------------------------------------------
 # configuration options related to the RTF output
@@ -1265,7 +1311,7 @@ PERLMOD_PRETTY         = YES
 PERLMOD_MAKEVAR_PREFIX = 
 
 #---------------------------------------------------------------------------
-# Configuration options related to the preprocessor   
+# Configuration options related to the preprocessor
 #---------------------------------------------------------------------------
 
 # If the ENABLE_PREPROCESSING tag is set to YES (the default) Doxygen will 
@@ -1331,7 +1377,7 @@ EXPAND_AS_DEFINED      =
 SKIP_FUNCTION_MACROS   = YES
 
 #---------------------------------------------------------------------------
-# Configuration::additions related to external references   
+# Configuration::additions related to external references
 #---------------------------------------------------------------------------
 
 # The TAGFILES option can be used to specify one or more tagfiles. 
@@ -1374,7 +1420,7 @@ EXTERNAL_GROUPS        = YES
 PERL_PATH              = /usr/bin/perl
 
 #---------------------------------------------------------------------------
-# Configuration options related to the dot tool   
+# Configuration options related to the dot tool
 #---------------------------------------------------------------------------
 
 # If the CLASS_DIAGRAMS tag is set to YES (the default) Doxygen will 
@@ -1448,7 +1494,7 @@ COLLABORATION_GRAPH    = NO
 # If the GROUP_GRAPHS and HAVE_DOT tags are set to YES then doxygen 
 # will generate a graph for groups, showing the direct groups dependencies
 
-GROUP_GRAPHS           = NO
+GROUP_GRAPHS           = YES
 
 # If the UML_LOOK tag is set to YES doxygen will generate inheritance and 
 # collaboration diagrams in a style similar to the OMG's Unified Modeling 
@@ -1466,14 +1512,14 @@ TEMPLATE_RELATIONS     = NO
 # file showing the direct and indirect include dependencies of the file with 
 # other documented files.
 
-INCLUDE_GRAPH          = NO
+INCLUDE_GRAPH          = YES
 
 # If the ENABLE_PREPROCESSING, SEARCH_INCLUDES, INCLUDED_BY_GRAPH, and 
 # HAVE_DOT tags are set to YES then doxygen will generate a graph for each 
 # documented header file showing the documented files that directly or 
 # indirectly include this file.
 
-INCLUDED_BY_GRAPH      = NO
+INCLUDED_BY_GRAPH      = YES
 
 # If the CALL_GRAPH and HAVE_DOT options are set to YES then 
 # doxygen will generate a call dependency graph for every global function 
@@ -1481,7 +1527,7 @@ INCLUDED_BY_GRAPH      = NO
 # the time of a run. So in most cases it will be better to enable call graphs 
 # for selected functions only using the \callgraph command.
 
-CALL_GRAPH             = NO
+CALL_GRAPH             = YES
 
 # If the CALLER_GRAPH and HAVE_DOT tags are set to YES then 
 # doxygen will generate a caller dependency graph for every global function 
@@ -1566,12 +1612,3 @@ GENERATE_LEGEND        = YES
 # the various graphs.
 
 DOT_CLEANUP            = YES
-
-#---------------------------------------------------------------------------
-# Options related to the search engine
-#---------------------------------------------------------------------------
-
-# The SEARCHENGINE tag specifies whether or not a search engine should be 
-# used. If set to NO the values of all tags below this one will be ignored.
-
-SEARCHENGINE           = NO

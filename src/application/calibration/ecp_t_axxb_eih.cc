@@ -1,7 +1,7 @@
 #include <stdexcept>
 
-#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
-#include "ecp/irp6p_m/ecp_r_irp6p_m.h"
+#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "robot/irp6p_m/ecp_r_irp6p_m.h"
 
 #include "ecp_t_axxb_eih.h"
 #include "ecp_st_acq_eih.h"
@@ -31,7 +31,7 @@ void axxb_eih::main_task_algorithm(void)
 	//run a subtask to get the data if needed
 	if (config.value <int> ("acquire")) {
 		// TODO: acq_eih jest do poprawy, patrz konstruktor
-		acq_eih* acq_task = new acq_eih(*this);
+		sub_task::acq_eih* acq_task = new sub_task::acq_eih(*this);
 		acq_task->write_data(K_file_path, kk_file_path, M_file_path, mm_file_path, ofp.number_of_measures);
 		delete acq_task;
 	}
@@ -62,7 +62,7 @@ void axxb_eih::main_task_algorithm(void)
 	gsl_matrix_fscanf(FP, ofp.M);
 	fclose(FP);
 	if ((FP = fopen(mm_file_path.c_str(), "r")) == NULL) {
-		throw runtime_error("fopen(mm_file_path = " + mm_file_path +"): " + string(strerror(errno)));
+		throw runtime_error("fopen(mm_file_path = " + mm_file_path + "): " + string(strerror(errno)));
 	}
 	gsl_vector_fscanf(FP, ofp.m);
 	fclose(FP);

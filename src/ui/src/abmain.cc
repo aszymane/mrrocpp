@@ -26,14 +26,14 @@ Examples:
 #endif
 
 /* Standard headers */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 
 /* Local headers */
 #include "ablibs.h"
-#include "../ui.h"
+#include "../src/ui.h"
 #include "abimport.h"
 #include "proto.h"
 #include "abwidgets.h"

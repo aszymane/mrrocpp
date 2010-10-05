@@ -7,16 +7,16 @@
 // ------------------------------------------------------------------------
 
 
-#include <stdio.h>
+#include <cstdio>
 
-#include "lib/typedefs.h"
-#include "lib/impconst.h"
-#include "lib/com_buf.h"
+#include "base/lib/typedefs.h"
+#include "base/lib/impconst.h"
+#include "base/lib/com_buf.h"
 
-#include "lib/srlib.h"
-#include "ecp_mp/task/ecp_mp_t_rcsc.h"
+#include "base/lib/sr/srlib.h"
+#include "application/rcsc/ecp_mp_t_rcsc.h"
 
-#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
 #include "application/playerjoy/ecp_g_pjg.h"
 #include "application/playerjoy/ecp_mp_tr_player.h"
 #include "application/playerjoy/ecp_t_playerjoy_irp6ot.h"
@@ -31,7 +31,7 @@ playerjoy::playerjoy(lib::configurator &_config) : task(_config)
 {
     ecp_m_robot = new robot (*this);
 
-    sr_ecp_msg->message("ECP loaded");
+    sr_ecp_msg->message("ecp loaded");
 
     transmitter_m[ecp_mp::transmitter::TRANSMITTER_PLAYER] =
         new ecp_mp::transmitter::player (ecp_mp::transmitter::TRANSMITTER_PLAYER, "[transmitter_player]", *this,

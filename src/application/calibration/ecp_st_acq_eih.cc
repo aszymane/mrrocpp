@@ -4,45 +4,47 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ecp_st_acq_eih.h"
+#include "base/ecp/ecp_task.h"
 
 namespace mrrocpp {
 namespace ecp {
 namespace common {
-namespace task {
+namespace sub_task {
 
 //Constructors
-acq_eih::acq_eih(task &_ecp_t) :
-	acquisition(_ecp_t) {
+acq_eih::acq_eih(task::task &_ecp_t) :
+	acquisition(_ecp_t)
+{
 	printf("acq_eih::acq_eih() 1\n");
 	fflush(stdout);
 	// Create an adequate robot. - depending on the ini section name.
-	if (ecp_sub_task::ecp_t.config.section_name == ECP_IRP6OT_M_SECTION) {
-		ecp_sub_task::ecp_t.ecp_m_robot = new irp6ot_m::robot(_ecp_t);
-		ecp_sub_task::ecp_t.sr_ecp_msg->message("IRp6ot loaded");
+	if (sub_task::ecp_t.config.section_name == lib::irp6ot_m::ECP_SECTION) {
+		sub_task::ecp_t.ecp_m_robot = new irp6ot_m::robot(_ecp_t);
+		sub_task::sr_ecp_msg.message("IRp6ot loaded");
 		robot = TRACK;
-	} else if (ecp_sub_task::ecp_t.config.section_name == ECP_IRP6P_M_SECTION) {
-		ecp_sub_task::ecp_t.ecp_m_robot = new irp6p_m::robot(_ecp_t);
-		ecp_sub_task::ecp_t.sr_ecp_msg->message("IRp6p loaded");
+	} else if (sub_task::ecp_t.config.section_name == lib::irp6p_m::ECP_SECTION) {
+		sub_task::ecp_t.ecp_m_robot = new irp6p_m::robot(_ecp_t);
+		sub_task::sr_ecp_msg.message("IRp6p loaded");
 		robot = POSTUMENT;
 	}
 
 	printf("acq_eih::acq_eih() 2\n");
 	fflush(stdout);
 
-	smooth_path = ecp_sub_task::ecp_t.config.value<std::string> ("smooth_path");
-	delay_ms = ecp_sub_task::ecp_t.config.value<int> ("delay");
-	M = ecp_sub_task::ecp_t.config.value<int> ("M");
-	A = ecp_sub_task::ecp_t.config.value<double> ("A");
-	C = ecp_sub_task::ecp_t.config.value<double> ("C");
-	D = ecp_sub_task::ecp_t.config.value<double> ("D");
-	E = ecp_sub_task::ecp_t.config.value<double> ("E");
-	acc = ecp_sub_task::ecp_t.config.value<double> ("acceleration");
-	vel = ecp_sub_task::ecp_t.config.value<double> ("velocity");
+	smooth_path = sub_task::ecp_t.config.value <std::string> ("smooth_path");
+	delay_ms = sub_task::ecp_t.config.value <int> ("delay");
+	M = sub_task::ecp_t.config.value <int> ("M");
+	A = sub_task::ecp_t.config.value <double> ("A");
+	C = sub_task::ecp_t.config.value <double> ("C");
+	D = sub_task::ecp_t.config.value <double> ("D");
+	E = sub_task::ecp_t.config.value <double> ("E");
+	acc = sub_task::ecp_t.config.value <double> ("acceleration");
+	vel = sub_task::ecp_t.config.value <double> ("velocity");
 	calibrated = false;
 
 	printf("acq_eih::acq_eih() 3\n");
 	fflush(stdout);
-	smoothgen = new generator::smooth(_ecp_t, true);
+	smoothgen = new generator::newsmooth(_ecp_t, lib::ECP_XYZ_ANGLE_AXIS,6);
 	printf("acq_eih::acq_eih() 4\n");
 	fflush(stdout);
 
@@ -52,21 +54,22 @@ acq_eih::acq_eih(task &_ecp_t) :
 	fflush(stdout);
 	nose->eih_nose_run::configure_pulse_check(true);
 
-	fradia = new ecp_mp::sensor::fradia_sensor<lib::empty_t, chessboard_t, eihcalibration_t>(_ecp_t.config, "[vsp_fradia_sensor]");
-	ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA] = fradia;
+	fradia
+			= new ecp_mp::sensor::fradia_sensor <lib::empty_t, chessboard_t, eihcalibration_t>(_ecp_t.config, "[vsp_fradia_sensor]");
+	sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_FRADIA] = fradia;
 
-	ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]->configure_sensor();
+	sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->configure_sensor();
 
 	generator = new generator::eihgenerator(_ecp_t);
-	generator->sensor_m = ecp_sub_task::ecp_t.sensor_m;
+	generator->sensor_m = sub_task::ecp_t.sensor_m;
 
 	printf("acq_eih::acq_eih() 7\n");
 	fflush(stdout);
 
-	ecp_sub_task::ecp_t.sr_ecp_msg->message("ECP loaded eihacquisition");
+	sub_task::sr_ecp_msg.message("ecp loaded eihacquisition");
 
 	// TODO: UWAGA: TU JEST WIELKI BUG: pole ofp nie jest zainicjalizowane
-	ofp.number_of_measures = ecp_sub_task::ecp_t.config.value<int> ("measures_count");
+	ofp.number_of_measures = sub_task::ecp_t.config.value <int> ("measures_count");
 
 	// translation vector (from robot base to tool frame) - received from MRROC
 	ofp.k = gsl_vector_calloc(3 * ofp.number_of_measures);
@@ -90,57 +93,72 @@ acq_eih::acq_eih(task &_ecp_t) :
 	fflush(stdout);
 }
 
-void acq_eih::main_task_algorithm(void) {
+void acq_eih::conditional_execution()
+{
+
+}
+
+void acq_eih::main_task_algorithm(void)
+{
 
 	int i = 0, j = 0, k, l, m = 0;
 	double a, b, c, d, e;
 	struct timespec delay;
 	delay.tv_nsec = (delay_ms % 1000) * 1000000;//delay in ms
 	delay.tv_sec = (int) (delay_ms / 1000);
+	std::vector <double> coordinates(6);
 
-	ecp_sub_task::ecp_t.sr_ecp_msg->message("ECP eihacquisition ready");
+	sub_task::sr_ecp_msg.message("ecp eihacquisition ready");
 
 	//Czekam, az czujnik bedzie skonfigurowany.
-	//ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> * fradia = dynamic_cast<ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> *> (ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]);
+	//ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> * fradia = dynamic_cast<ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> *> (sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_CVFRADIA]);
 	fradia->get_reading();
-	while(fradia->get_report() == lib::VSP_SENSOR_NOT_CONFIGURED) {
+	while (fradia->get_report() == lib::sensor::VSP_SENSOR_NOT_CONFIGURED) {
 		fradia->get_reading();
 	}
 
+	smoothgen->reset();
 	smoothgen->set_absolute();
 
 	// wczytanie pozycji poczatkowej i przejscie do niej za pomoca smooth
-	smoothgen->load_file_with_path(smooth_path.c_str());
+	smoothgen->load_trajectory_from_file(smooth_path.c_str());
 	smoothgen->Move();
 
 	// doprowadzenie chwytaka do szachownicy "wodzeniem za nos"
 	/*
-	while(fradia->get_reading_message().found == false){
-		fradia->get_reading();
-		nose->Move();
-		generator->Move();
-		store_data();
-	}
-	nose->Move();*/
+	 while(fradia->get_reading_message().found == false){
+	 fradia->get_reading();
+	 nose->Move();
+	 generator->Move();
+	 store_data();
+	 }
+	 nose->Move();*/
 
-	ecp_sub_task::ecp_t.sr_ecp_msg->message("Data collection\n");
+	sub_task::sr_ecp_msg.message("Data collection\n");
 
 	// maximum velocity and acceleration of smooth generator
-	double vv[MAX_SERVOS_NR] = { vel, vel, vel, vel, vel, vel, vel, vel };
-	double aa[MAX_SERVOS_NR] = { acc, acc, acc, acc, acc, acc, acc, acc };
-	//double coordinates[MAX_SERVOS_NR]={0.0, 0.0, -1.0 * A, 0.0, 0.0, 0.0, 0.0, 0.0};
+	//double vv[lib::MAX_SERVOS_NR] = { vel, vel, vel, vel, vel, vel, vel, vel };
+	//double aa[lib::MAX_SERVOS_NR] = { acc, acc, acc, acc, acc, acc, acc, acc };
+	//double coordinates[lib::MAX_SERVOS_NR]={0.0, 0.0, -1.0 * A, 0.0, 0.0, 0.0, 0.0, 0.0};
 	smoothgen->set_relative();
 
-	//	std::cout<<sensor_m[lib::SENSOR_CVFRADIA]->from_vsp.comm_image.sensor_union.chessboard.found<<std::endl;
+	//	std::cout<<sensor_m[ecp_mp::sensor::SENSOR_CVFRADIA]->from_vsp.comm_image.sensor_union.chessboard.found<<std::endl;
 
 	//opusc chwytak az przestanie "widziec" szachownice
-	while(fradia->get_reading_message().found == true && !calibrated){
+	while (fradia->get_reading_message().found == true && !calibrated) {
 		//opuszczenie chwytaka o 2.5 cm
-		smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0,
-				A, 0.0, 0.0, 0.0, 0.0, 0.0, true);
+		//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, A, 0.0, 0.0, 0.0, 0.0, 0.0, true);
+		smoothgen->reset();
+		coordinates[0] = 0.0;
+		coordinates[1] = 0.0;
+		coordinates[2] = A;
+		coordinates[3] = 0.0;
+		coordinates[4] = 0.0;
+		coordinates[5] = 0.0;
+		smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
 		smoothgen->Move();
 		nanosleep(&delay, NULL);
-		ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]->get_reading();
+		sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->get_reading();
 		generator->Move();
 		store_data();
 		++i;
@@ -148,12 +166,19 @@ void acq_eih::main_task_algorithm(void) {
 	}
 
 	// podnies chwytak do ostatniej pozycji w ktorej wykryto szachownice
-	smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, A,
-			0.0, 0.0, 0.0, 0.0, 0.0, true);
+	smoothgen->reset();
+	coordinates[0] = 0.0;
+	coordinates[1] = 0.0;
+	coordinates[2] = A;
+	coordinates[3] = 0.0;
+	coordinates[4] = 0.0;
+	coordinates[5] = 0.0;
+	//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, A, 0.0, 0.0, 0.0, 0.0, 0.0, true);
+	smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
 	smoothgen->Move();
 	nanosleep(&delay, NULL);
 	--i;
-	ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]->get_reading();
+	sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->get_reading();
 
 	// zabezpieczenie przed przekroczeniem obszaru roboczego robota
 	bool flaga = true;
@@ -178,24 +203,37 @@ void acq_eih::main_task_algorithm(void) {
 				e = -1.0 * E;
 			}
 
-			while(((fradia->get_reading_message().found) == true)
-				&& calibrated == false && m < M )
-			{
-				smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, e, c, d, 0.0, 0.0, true);
+			while (((fradia->get_reading_message().found) == true) && calibrated == false && m < M) {
+				smoothgen->reset();
+				coordinates[0] = 0.0;
+				coordinates[1] = 0.0;
+				coordinates[2] = 0.0;
+				coordinates[3] = e;
+				coordinates[4] = c;
+				coordinates[5] = d;
+				//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, e, c, d, 0.0, 0.0, true);
+				smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
 				smoothgen->Move();
 				nanosleep(&delay, NULL);
 				generator->Move();
 				store_data();
 				++m;
-				ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]->get_reading();
+				sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->get_reading();
 			}
 
 			if (m != 0) {
 				//powrot do poprzedniej pozycji
-				smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa,
-						0.0, 0.0, 0.0, -1.0 * m * e, -1.0 * m * c,
-						-1.0 * m * d, 0.0, 0.0, true);printf("acq_eih::main_task_alg() 1\n");
-						fflush(stdout);
+				smoothgen->reset();
+				coordinates[0] = 0.0;
+				coordinates[1] = 0.0;
+				coordinates[2] = 0.0;
+				coordinates[3] = -1.0 * m * e;
+				coordinates[4] = -1.0 * m * c;
+				coordinates[5] = -1.0 * m * d;
+				//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, -1.0 * m * e, -1.0 * m * c, -1.0 * m * d, 0.0, 0.0, true);
+				smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+				printf("acq_eih::main_task_alg() 1\n");
+				fflush(stdout);
 				smoothgen->Move();
 				m = 0;
 				nanosleep(&delay, NULL);
@@ -228,9 +266,16 @@ void acq_eih::main_task_algorithm(void) {
 				b = -1.0 * A;
 			}
 
-			while(fradia->get_reading_message().found == true && calibrated == false && flaga)
-			{
-				smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, a, b, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true);
+			while (fradia->get_reading_message().found == true && calibrated == false && flaga) {
+				smoothgen->reset();
+				coordinates[0] = a;
+				coordinates[1] = b;
+				coordinates[2] = 0.0;
+				coordinates[3] = 0.0;
+				coordinates[4] = 0.0;
+				coordinates[5] = 0.0;
+				smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+				//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, a, b, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true);
 				smoothgen->Move();
 				nanosleep(&delay, NULL);
 				generator->Move();
@@ -258,15 +303,20 @@ void acq_eih::main_task_algorithm(void) {
 
 					// zabezpieczenie przed przekroczeniem obszaru roboczego robota
 					/*start2 b>0 d<0*/
-					if (a > 0.0 && m == 0 && c > 0 && ((i == 0 && j == 1) || (i
-							== 1 && j == 1) || (i == 2 && j == 2) || (i == 3
-							&& j == 3)))
+					if (a > 0.0 && m == 0 && c > 0 && ((i == 0 && j == 1) || (i == 1 && j == 1) || (i == 2 && j == 2)
+							|| (i == 3 && j == 3)))
 						/*start1 a>0 c>0 ot i p*/flaga = false;
 
-					while(((fradia->get_reading_message().found) == true)
-						&& (calibrated == false) && m < M && flaga)
-					{
-						smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, e, c, d, 0.0, 0.0, true);
+					while (((fradia->get_reading_message().found) == true) && (calibrated == false) && m < M && flaga) {
+						smoothgen->reset();
+						coordinates[0] = 0.0;
+						coordinates[1] = 0.0;
+						coordinates[2] = 0.0;
+						coordinates[3] = e;
+						coordinates[4] = c;
+						coordinates[5] = d;
+						smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+						//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, e, c, d, 0.0, 0.0, true);
 						smoothgen->Move();
 						nanosleep(&delay, NULL);
 						generator->Move();
@@ -279,9 +329,15 @@ void acq_eih::main_task_algorithm(void) {
 
 					if (m != 0) {
 						//powrot do poprzedniej pozycjiodczyt danych do obliczen z zadanych plikow
-						smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS,
-								vv, aa, 0.0, 0.0, 0.0, -1.0 * m * e, -1.0 * m
-										* c, -1.0 * m * d, 0.0, 0.0, true);
+						smoothgen->reset();
+						coordinates[0] = 0.0;
+						coordinates[1] = 0.0;
+						coordinates[2] = 0.0;
+						coordinates[3] = -1.0 * m * e;
+						coordinates[4] = -1.0 * m * c;
+						coordinates[5] = -1.0 * m * d;
+						smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+						//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, 0.0, -1.0 * m * e, -1.0 * m * c, -1.0 * m * d, 0.0, 0.0, true);
 						smoothgen->Move();
 						m = 0;
 						nanosleep(&delay, NULL);
@@ -289,8 +345,8 @@ void acq_eih::main_task_algorithm(void) {
 					}
 				}
 				// zabezpieczenie przed przekroczeniem obszaru roboczego robota
-				/*start2 b>0*/if (a > 0.0 && ((i == 1 && j == 1) || (i == 2
-						&& j == 2) || (i == 3 && j == 3) || (i == 0 && j == 1)))
+				/*start2 b>0*/if (a > 0.0 && ((i == 1 && j == 1) || (i == 2 && j == 2) || (i == 3 && j == 3) || (i == 0
+						&& j == 1)))
 					/*start1 a>0*/flaga = false;
 			}
 
@@ -298,9 +354,15 @@ void acq_eih::main_task_algorithm(void) {
 
 			if (j != 0) {
 				//powrot do poprzedniej pozycji
-				smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa,
-						-1.0 * j * a, -1.0 * j * b, 0.0, 0.0, 0.0, 0.0, 0.0,
-						0.0, true);
+				smoothgen->reset();
+				coordinates[0] = -1.0 * j * a;
+				coordinates[1] = -1.0 * j * b;
+				coordinates[2] = 0.0;
+				coordinates[3] = 0.0;
+				coordinates[4] = 0.0;
+				coordinates[5] = 0.0;
+				smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+				//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, -1.0 * j * a, -1.0 * j * b, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, true);
 				smoothgen->Move();
 				j = 0;
 				nanosleep(&delay, NULL);
@@ -309,8 +371,15 @@ void acq_eih::main_task_algorithm(void) {
 		}
 
 		// podnies chwytak o 2.5 cm
-		smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0,
-				-1.0 * A, 0.0, 0.0, 0.0, 0.0, 0.0, true);
+		smoothgen->reset();
+		coordinates[0] = 0.0;
+		coordinates[1] = 0.0;
+		coordinates[2] = -1.0 * A;
+		coordinates[3] = 0.0;
+		coordinates[4] = 0.0;
+		coordinates[5] = 0.0;
+		smoothgen->load_relative_angle_axis_trajectory_pose(coordinates);
+		//smoothgen->load_coordinates(lib::ECP_XYZ_ANGLE_AXIS, vv, aa, 0.0, 0.0, -1.0 * A, 0.0, 0.0, 0.0, 0.0, 0.0, true);
 		smoothgen->Move();
 		nanosleep(&delay, NULL);
 		fradia->get_reading();
@@ -337,28 +406,26 @@ void acq_eih::main_task_algorithm(void) {
 	//ecp_wait_for_stop();
 }
 
-bool acq_eih::store_data(void )
+bool acq_eih::store_data(void)
 {
-	int i,j=0;
+	int i, j = 0;
 
-	//ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> * fradia = dynamic_cast<ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> *> (ecp_sub_task::ecp_t.sensor_m[lib::SENSOR_CVFRADIA]);
+	//ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> * fradia = dynamic_cast<ecp_mp::sensor::fradia_sensor<chessboard_t,lib::empty_t> *> (sub_task::ecp_t.sensor_m[ecp_mp::sensor::SENSOR_CVFRADIA]);
 
-	if(fradia->get_reading_message().found == true && !calibrated)
-	{
-		for(i=0; i<12; ++i)
-		{
+	if (fradia->get_reading_message().found == true && !calibrated) {
+		for (i = 0; i < 12; ++i) {
 			// store translation vector received from robot
 			if (i % 4 == 3) {
 				// translation vector
-				gsl_vector_set (ofp.k, 3 * generator->count + j, generator->tab[i]);
-				gsl_vector_set (ofp.m, 3 * generator->count + j, fradia->get_reading_message().transformation_matrix[i]);
+				gsl_vector_set(ofp.k, 3 * generator->count + j, generator->tab[i]);
+				gsl_vector_set(ofp.m, 3 * generator->count + j, fradia->get_reading_message().transformation_matrix[i]);
 				++j;
 			}
 			// store rotation matrix received from robot
 			else {
 				// rotation matrix
-				gsl_matrix_set (ofp.K, 3 * generator->count + j, i % 4, generator->tab[i]);
-				gsl_matrix_set (ofp.M, 3 * generator->count + j, i % 4, fradia->get_reading_message().transformation_matrix[i]);
+				gsl_matrix_set(ofp.K, 3 * generator->count + j, i % 4, generator->tab[i]);
+				gsl_matrix_set(ofp.M, 3 * generator->count + j, i % 4, fradia->get_reading_message().transformation_matrix[i]);
 			}
 		}
 	}
@@ -369,8 +436,8 @@ bool acq_eih::store_data(void )
 	return true;
 }
 
-void acq_eih::write_data(std::string _K_fp, std::string _kk_fp,
-		std::string _M_fp, std::string _mm_fp, int _number_of_measures) {
+void acq_eih::write_data(const std::string & _K_fp, const std::string & _kk_fp, const std::string & _M_fp, const std::string & _mm_fp, int _number_of_measures)
+{
 	K_fp = _K_fp;
 	kk_fp = _kk_fp;
 	M_fp = _M_fp;

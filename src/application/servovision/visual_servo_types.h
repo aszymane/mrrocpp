@@ -17,11 +17,11 @@ namespace visual_servo_types {
  */
 struct image_based_position
 {
-	/** Translation along X axis, from the center of the image. */
+	/** Error along X axis, from the desired position [pixels]. */
 	int x;
-	/** Translation along Y axis, from the center of the image. */
+	/** Error along Y axis. */
 	int y;
-	/** Translation along Z axis, distance from point located in front of the camera. */
+	/** Error along Z axis, distance from point located in front of the camera. */
 	int z;
 
 	/** Rotation along Z axis. */
@@ -56,6 +56,9 @@ struct image_based_configuration
 	image_based_position desired_position;
 };
 
+/**
+ *
+ */
 struct image_based_reading
 {
 	/** Set to true only if object is found in the image. */
@@ -64,6 +67,9 @@ struct image_based_reading
 	image_based_position error;
 };
 
+/**
+ *
+ */
 struct position_based_reading
 {
 	/** Set to true only if object is found in the image. */

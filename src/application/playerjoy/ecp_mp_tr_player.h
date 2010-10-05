@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 
-#include "ecp_mp/transmitter/transmitter.h"				// klasa bazowa transmitter
+#include "base/ecp_mp/transmitter.h"				// klasa bazowa transmitter
 #include "player/playerc.h"
 
 playerc_joystick_t player_joystick;
@@ -30,7 +30,7 @@ class player: public transmitter {
   public:
 	// Konstruktor
  	player (
-            TRANSMITTER_ENUM _transmitter_name, const char* _section_name, task::task& _ecp_mp_object,
+            TRANSMITTER_t _transmitter_name, const char* _section_name, task::task& _ecp_mp_object,
             const char *host, unsigned int port,
             const char *devname, int devindex, int access);
 											// konstruktor czujnika virtualnego

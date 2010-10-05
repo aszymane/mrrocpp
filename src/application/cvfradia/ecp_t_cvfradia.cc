@@ -6,20 +6,20 @@
  * \date 17.03.2008
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <unistd.h>
 
-#include "lib/typedefs.h"
-#include "lib/impconst.h"
-#include "lib/com_buf.h"
+#include "base/lib/typedefs.h"
+#include "base/lib/impconst.h"
+#include "base/lib/com_buf.h"
 
-#include "lib/srlib.h"
+#include "base/lib/sr/srlib.h"
 
-#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
-#include "ecp/irp6p_m/ecp_r_irp6p_m.h"
+#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "robot/irp6p_m/ecp_r_irp6p_m.h"
 
-#include "ecp_mp/sensor/ecp_mp_s_cvfradia.h"
+#include "base/ecp_mp/sensor/ecp_mp_s_cvfradia.h"
 #include "ecp_t_cvfradia.h"
 
 namespace mrrocpp {
@@ -33,17 +33,17 @@ namespace task {
 cvfradia::cvfradia(lib::configurator &_config) : task(_config)
 {
 	// Create cvFraDIA sensor - for testing purposes.
-	sensor_m[lib::SENSOR_CVFRADIA] = new ecp_mp::sensor::cvfradia(lib::SENSOR_CVFRADIA, "[vsp_cvfradia]", *this, sizeof(lib::sensor_image_t::sensor_union_t::fradia_t));
+	sensor_m[ecp_mp::sensor::SENSOR_FRADIA] = new ecp_mp::sensor::cvfradia(ecp_mp::sensor::SENSOR_FRADIA, "[vsp_cvfradia]", *this, sizeof(lib::sensor_image_t::sensor_union_t::fradia_t));
 	// Configure sensor.
-	sensor_m[lib::SENSOR_CVFRADIA]->configure_sensor();
+	sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->configure_sensor();
 
 	// Create an adequate robot. - depending on the ini section name.
-    if (config.section_name == ECP_IRP6OT_M_SECTION)
+    if (config.section_name == ECP_SECTION)
     {
         ecp_m_robot = new irp6ot_m::robot (*this);
         sr_ecp_msg->message("IRp6ot loaded");
     }
-    else if (config.section_name == ECP_IRP6P_M_SECTION)
+    else if (config.section_name == lib::irp6p_m::ECP_SECTION)
     {
         ecp_m_robot = new irp6p_m::robot (*this);
         sr_ecp_msg->message("IRp6p loaded");

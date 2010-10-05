@@ -9,13 +9,13 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signal.h>
+#include <csignal>
 
 #include "ui_config_entry.h"
 #include "ui_model.h"
 
 #if defined(USE_MESSIP_SRR)
-#include "messip_dataport.h"
+#include "base/lib/messip/messip_dataport.h"
 #endif
 
 using namespace Glib;
@@ -112,9 +112,9 @@ MpPanel::MpPanel(ui_config_entry &entry)
 		GtkButton **object;
 		const char *name;
 	} builder_widgets[] = {
-			{ &MpStartPauseButton, "MpStartPauseButton" },
-			{ &MpStopButton, "MpStopButton" },
-			{ &MpTriggerButton, "MpTriggerButton" },
+			{ &MpStartPauseButton, "mpStartPauseButton" },
+			{ &MpStopButton, "mpStopButton" },
+			{ &MpTriggerButton, "mpTriggerButton" },
 			{ &AllRobotsReaderButton, "AllRobotsReaderButton" },
 			{ &AllRobotsReaderTriggerButton, "AllRobotsReaderTriggerButton" },
 			{ &AllRobotsEcpTrigger, "AllRobotsEcpTrigger" },
@@ -123,7 +123,7 @@ MpPanel::MpPanel(ui_config_entry &entry)
 	for (size_t i = 0; i < sizeof(builder_widgets)/sizeof(builder_widgets[0]); i++) {
 		*builder_widgets[i].object = GTK_BUTTON(gtk_builder_get_object(&builder, builder_widgets[i].name));
 		if(!*builder_widgets[i].object) {
-			fprintf(stderr, "MP button object %d (\"%s\") assignment failed\n", i, builder_widgets[i].name);
+			fprintf(stderr, "mp button object %d (\"%s\") assignment failed\n", i, builder_widgets[i].name);
 
 		}
 		g_assert(*builder_widgets[i].object);
@@ -217,7 +217,7 @@ MpPanel::MpPanel(ui_config_entry &entry)
 
 	const char *vseparators[] = {
 			"ReaderSeparator",
-			"EcpSeparator",
+			"ecpSeparator",
 			NULL
 	};
 
@@ -234,25 +234,25 @@ MpPanel::MpPanel(ui_config_entry &entry)
 	}
 
 	//! spawn MP
-	mp_pid = ui_model::instance().getConfigurator().process_spawn(MP_SECTION);
+	mp_pid = ui_model::instance().getConfigurator().process_spawn(lib::MP_SECTION);
 
 	if (mp_pid > 0) {
 
 		const std::string network_pulse_attach_point = ui_model::instance().getConfigurator()
-			.return_attach_point_name(lib::configurator::CONFIG_SERVER, "mp_pulse_attach_point", MP_SECTION);
+			.return_attach_point_name(lib::configurator::CONFIG_SERVER, "mp_pulse_attach_point", lib::MP_SECTION);
 
 		short tmp = 0;
 		// try to open channel
 		while( (pulse_fd = messip::port_connect(network_pulse_attach_point)) == NULL)
-			if((tmp++)<CONNECT_RETRY) {
+			if((tmp++)<lib::CONNECT_RETRY) {
 //				fprintf(stderr, "."); fflush(stderr);
-				delay(CONNECT_DELAY);
+				delay(lib::CONNECT_DELAY);
 			} else {
 				fprintf(stderr, "blad odwolania do: %s,\n", network_pulse_attach_point.c_str());
 				break;
 			}
 	} else {
-		fprintf(stderr, "MP spawn failed\n");
+		fprintf(stderr, "mp spawn failed\n");
 		return;
 	}
 
@@ -267,7 +267,7 @@ MpPanel::~MpPanel(void) {
 	}
 
 /*
-	if ((ui.mp.state == UI_MP_TASK_RUNNING) || (ui.mp.state == UI_MP_TASK_PAUSED)){
+	if ((interface.mp.state == UI_MP_TASK_RUNNING) || (interface.mp.state == UI_MP_TASK_PAUSED)){
 
 		pulse_stop_mp (widget,apinfo,cbinfo);
 	}
@@ -316,7 +316,7 @@ void MpPanel::StartButtonMode(StartButtonMode_t mode) {
 	GtkBuilder & builder = (config_entry.getBuilder());
 
 	// get the button image
-	GtkImage *button_image = GTK_IMAGE(gtk_builder_get_object(&builder, "MpStartButtonImage"));
+	GtkImage *button_image = GTK_IMAGE(gtk_builder_get_object(&builder, "mpStartButtonImage"));
 	g_assert(button_image);
 
 	// get the stock image size
@@ -325,7 +325,7 @@ void MpPanel::StartButtonMode(StartButtonMode_t mode) {
 	gtk_image_get_stock(button_image, &stock_id, &icon_size);
 
 	// get the button label
-	GtkLabel *button_label = GTK_LABEL(gtk_builder_get_object(&builder, "MpStartButtonLabel"));
+	GtkLabel *button_label = GTK_LABEL(gtk_builder_get_object(&builder, "mpStartButtonLabel"));
 	g_assert(button_label);
 
 	switch (mode) {

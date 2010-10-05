@@ -11,18 +11,18 @@
 /********************************* INCLUDES *********************************/
 
 /* Standard headers */
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
+#include <cstring>
 
 /* MRROC++ headers */
-#include "lib/typedefs.h"
-#include "lib/impconst.h"
-#include "lib/com_buf.h"
+#include "base/lib/typedefs.h"
+#include "base/lib/impconst.h"
+#include "base/lib/com_buf.h"
 
-#include "ui/ui.h"
-#include "ui/ui_const.h"
+#include "ui/src/ui.h"
+
 
 /* Local headers */
 #include "ablibs.h"
@@ -49,8 +49,10 @@ int FLbtnAcceptFile(PtWidget_t *widget, ApInfo_t *apinfo,
 	printf("FLbtnAcceptFile\n");
 #endif
 	// Ustawienie typu wiadomosci.
+#if !defined(USE_MESSIP_SRR)
 	ui_ecp_msg.hdr.type = 0x00;
 	ui_ecp_msg.hdr.subtype = 0x00;
+#endif
 	// Przepisanie polecenia dla ECP.
 	ui_ecp_msg.command = FDCommand;
 	// Odczytanie sciezki.

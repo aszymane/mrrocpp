@@ -5,10 +5,10 @@
  *      Author: ptroja
  */
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include <stdint.h>
-#include <errno.h>
+#include <cerrno>
 
 #include <iostream>
 #include <fstream>
@@ -17,10 +17,10 @@
 
 #include "ui_model.h"
 
-#include "lib/srlib.h"
+#include "base/lib/sr/srlib.h"
 
 #if defined(USE_MESSIP_SRR)
-#include "messip_dataport.h"
+#include "base/lib/messip/messip_dataport.h"
 #endif
 
 enum
@@ -47,7 +47,7 @@ void *sr_thread(void* arg)
 {
 	messip_channel_t *ch;
 
-	// TODO:ui.config->return_attach_point_name(lib::configurator::CONFIG_SERVER, "sr_attach_point", UI_SECTION);
+	// TODO:interface.config->return_attach_point_name(lib::configurator::CONFIG_SERVER, "sr_attach_point", lib::UI_SECTION);
 	if ((ch = messip::port_create("sr")) == NULL) {
 		return NULL;
 	}
@@ -135,7 +135,7 @@ void *sr_thread(void* arg)
 		if (rcvid == -1) /* Error condition, exit */
 		{
 			perror("SR: Receive failed");
-			// 	  throw generator::ECP_error(lib::SYSTEM_ERROR, (uint64_t) 0);
+			// 	  throw ECP_error(lib::SYSTEM_ERROR, (uint64_t) 0);
 			break;
 		} else if (rcvid < -1) {
 			// ie. MESSIP_MSG_DISCONNECT
@@ -177,16 +177,16 @@ void *sr_thread(void* arg)
 
 			switch (sr_msg.process_type) {
 				case EDP:
-					strcat(current_line, "EDP: ");
+					strcat(current_line, "edp: ");
 					break;
 				case ECP:
-					strcat(current_line, "ECP: ");
+					strcat(current_line, "ecp: ");
 					break;
 				case MP:
-					strcat(current_line, "MP:  ");
+					strcat(current_line, "mp:  ");
 					break;
 				case VSP:
-					strcat(current_line, "VSP: ");
+					strcat(current_line, "vsp: ");
 					break;
 				case UI:
 					strcat(current_line, "UI:  ");

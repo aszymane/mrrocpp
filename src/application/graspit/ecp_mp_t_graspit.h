@@ -1,4 +1,3 @@
-
 #ifndef __ECP_MP_T_GRASPIT_H
 #define __ECP_MP_T_GRASPIT_H
 
@@ -9,9 +8,7 @@ namespace task {
 /**
  * Used generators.
  */
-enum GRASPIT_ECP_STATES {
-	ECP_GEN_IRP6 = 0, ECP_GEN_BIRD_HAND
-};
+const std::string ECP_GEN_IRP6 = "ECP_GEN_IRP6";
 
 } // namespace task
 } // namespace ecp_mp

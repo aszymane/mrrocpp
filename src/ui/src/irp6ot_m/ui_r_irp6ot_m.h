@@ -8,9 +8,20 @@
 #ifndef __UI_R_IRP6OT_M_H
 #define __UI_R_IRP6OT_M_H
 
-#include "ui/ui.h"
-#include "ui/ui_robot.h"
-#include "lib/robot_consts/irp6ot_m_const.h"
+#include "ui/src/ui.h"
+#include "ui/src/ui_robot.h"
+#include "robot/irp6ot_m/const_irp6ot_m.h"
+
+namespace mrrocpp {
+namespace ui {
+namespace common {
+class Interface;
+}
+
+namespace irp6 {
+class EcpRobot;
+}
+namespace irp6ot_m {
 
 //
 //
@@ -19,17 +30,13 @@
 //
 
 
-// super klasa agregujaca porozrzucane struktury
-
-class Ui;
-class ui_irp6_common_robot;
-
-class UiRobotIrp6ot_m: public UiRobot {
+class UiRobot : public common::UiRobot
+{
 private:
 
 public:
-	double irp6ot_current_pos[IRP6OT_M_NUM_OF_SERVOS]; // pozycja biezaca
-	double irp6ot_desired_pos[IRP6OT_M_NUM_OF_SERVOS]; // pozycja zadana
+	double irp6ot_current_pos[lib::irp6ot_m::NUM_OF_SERVOS]; // pozycja biezaca
+	double irp6ot_desired_pos[lib::irp6ot_m::NUM_OF_SERVOS]; // pozycja zadana
 
 
 	bool is_wind_irp6ot_int_open; // informacja czy okno ruchow w radianach stawow jest otwarte
@@ -43,18 +50,20 @@ public:
 	bool is_wind_irp6ot_servo_algorithm_open; // informacja czy okno definicji kinematyki jest otwarte
 
 
-	ui_irp6_common_robot *ui_ecp_robot;
+	irp6::EcpRobot *ui_ecp_robot;
 
-	UiRobotIrp6ot_m(Ui& _ui);
+	UiRobot(common::Interface& _interface);
 	int reload_configuration();
 	int manage_interface();
-	int process_control_window_irp6ot_section_init(
-			bool &wlacz_PtButton_wnd_processes_control_all_reader_start,
-			bool &wlacz_PtButton_wnd_processes_control_all_reader_stop,
-			bool &wlacz_PtButton_wnd_processes_control_all_reader_trigger);
+	int
+			process_control_window_irp6ot_section_init(bool &wlacz_PtButton_wnd_processes_control_all_reader_start, bool &wlacz_PtButton_wnd_processes_control_all_reader_stop, bool &wlacz_PtButton_wnd_processes_control_all_reader_trigger);
 	int close_all_windows();
 	int delete_ui_ecp_robot();
 };
+
+}
+} //namespace ui
+} //namespace mrrocpp
 
 #endif
 

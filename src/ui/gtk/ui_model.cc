@@ -7,7 +7,7 @@
 
 #include "ui_model.h"
 
-#include "lib/configurator.h"
+#include "base/lib/configurator.h"
 
 ui_model * ui_model::pointerToTheSingletonInstance = NULL;
 
@@ -63,9 +63,9 @@ ui_model::ui_model() : tabs_visible(0),
 	builder = gtk_builder_new();
 
 	GError *error = NULL;
-	if (gtk_builder_add_from_file(builder, "ui.xml", &error) == 0) {
+	if (gtk_builder_add_from_file(builder, "interface.xml", &error) == 0) {
 		if (error) {
-			fprintf (stderr, "Unable to read file ui.xml: %s\n", error->message);
+			fprintf (stderr, "Unable to read file interface.xml: %s\n", error->message);
 			g_error_free(error);
 			exit(-1);
 		} else {
@@ -102,7 +102,7 @@ ui_model::ui_model() : tabs_visible(0),
 	this->config = new lib::configurator(
 			g_get_host_name(),
 			cwd,
-			"rcsc.ini", UI_SECTION, "");
+			"rcsc.ini", lib::UI_SECTION, "");
 }
 
 void ui_model::init_sr(void) {
@@ -110,7 +110,7 @@ void ui_model::init_sr(void) {
 	ecp_report = new lib::sr_ecp(mrrocpp::lib::UI, "ui", "sr");
 
 	ui_report->message("UI report");
-	ecp_report->message("ECP report");
+	ecp_report->message("ecp report");
 }
 
 mrrocpp::lib::sr_ecp & ui_model::getEcpSr(void) const {
@@ -196,20 +196,20 @@ Glib::RefPtr<Glib::Object> ui_model::getUiObject(const gchar *name) {
 }
 
 void ui_model::setMpLoadButton (bool sensitive, bool button_type_is_load) {
-	Gtk::ToolButton & MpButton = *Glib::wrap(GTK_TOOL_BUTTON(getUiGObject("MpLoadButton")));
+	Gtk::ToolButton & MpButton = *Glib::wrap(GTK_TOOL_BUTTON(getUiGObject("mpLoadButton")));
 
 	MpButton.set_sensitive(sensitive);
 	if (button_type_is_load) {
 		MpButton.set_stock_id(Gtk::Stock::CONNECT);
-		MpButton.set_label("MP Load");
+		MpButton.set_label("mp Load");
 	} else {
 		MpButton.set_stock_id(Gtk::Stock::DISCONNECT);
-		MpButton.set_label("MP Unload");
+		MpButton.set_label("mp Unload");
 	}
 }
 
 void ui_model::setEdpsLoadButton (bool sensitive, bool button_type_is_load) {
-	GObject *obj = getUiGObject("EdpsLoadButton");
+	GObject *obj = getUiGObject("edpsLoadButton");
 	g_assert (obj);
 	Gtk::ToolButton & EcpsButton = *Glib::wrap(GTK_TOOL_BUTTON(obj));
 

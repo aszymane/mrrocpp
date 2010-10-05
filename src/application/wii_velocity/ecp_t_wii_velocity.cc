@@ -1,16 +1,17 @@
-#include <string.h>
+#include <cstring>
 
-#include "lib/typedefs.h"
-#include "lib/impconst.h"
-#include "lib/com_buf.h"
+#include "base/lib/typedefs.h"
+#include "base/lib/impconst.h"
+#include "base/lib/com_buf.h"
 #include <fstream>
 
-#include "lib/srlib.h"
+#include "base/lib/sr/srlib.h"
 #include "application/wii_teach/sensor/ecp_mp_s_wiimote.h"
 
-#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "base/ecp/ecp_task.h"
+#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
 #include "application/wii_velocity/ecp_t_wii_velocity.h"
-#include "lib/mrmath/mrmath.h"
+#include "base/lib/mrmath/mrmath.h"
 
 namespace mrrocpp {
 namespace ecp {
@@ -20,7 +21,7 @@ namespace task {
 wii_velocity::wii_velocity(lib::configurator &_config) :
 	task(_config) {
 	ecp_m_robot = new irp6ot_m::robot(*this);
-	sr_ecp_msg->message("ECP loaded");
+	sr_ecp_msg->message("ecp loaded");
 
 	//create Wii-mote virtual sensor object
 	sensor_m[ecp_mp::sensor::SENSOR_WIIMOTE] = new ecp_mp::sensor::wiimote(ecp_mp::sensor::SENSOR_WIIMOTE, "[vsp_wiimote]", *this->sr_ecp_msg, this->config);

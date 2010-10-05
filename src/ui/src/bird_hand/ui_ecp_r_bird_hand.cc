@@ -8,57 +8,58 @@
 /* Standard headers */
 #include <iostream>
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
-#include <assert.h>
+#include <cstring>
+#include <cassert>
 #include <fcntl.h>
-#include <errno.h>
-#include <math.h>
+#include <cerrno>
+#include <cmath>
 
-#include "lib/typedefs.h"
-#include "lib/impconst.h"
-#include "lib/com_buf.h"
+#include "base/lib/typedefs.h"
+#include "base/lib/impconst.h"
+#include "base/lib/com_buf.h"
 
-#include "lib/srlib.h"
+#include "base/lib/sr/srlib.h"
 
 #include "ui/src/bird_hand/ui_ecp_r_bird_hand.h"
 
+namespace mrrocpp {
+namespace ui {
+namespace bird_hand {
+
 // ---------------------------------------------------------------
-ui_bird_hand_robot::ui_bird_hand_robot(lib::configurator &_config,
-		lib::sr_ecp &_sr_ecp_msg) :
-	the_robot(NULL) {
+EcpRobot::EcpRobot(lib::configurator &_config, lib::sr_ecp &_sr_ecp_msg) :
+	the_robot(NULL)
+{
 
 	the_robot = new ecp::bird_hand::robot(_config, _sr_ecp_msg);
 
-	bird_hand_command_data_port = the_robot->port_manager.get_port<
-			lib::bird_hand_command> (BIRD_HAND_COMMAND_DATA_PORT);
+	bird_hand_command_data_port
+			= the_robot->port_manager.get_port <lib::bird_hand::command> (lib::bird_hand::COMMAND_DATA_PORT);
 
 	bird_hand_configuration_command_data_port
-			= the_robot->port_manager.get_port<lib::bird_hand_configuration> (
-					BIRD_HAND_CONFIGURATION_DATA_PORT);
+			= the_robot->port_manager.get_port <lib::bird_hand::configuration> (lib::bird_hand::CONFIGURATION_DATA_PORT);
 
 	bird_hand_status_reply_data_request_port
-			= the_robot->port_manager.get_request_port<lib::bird_hand_status> (
-					BIRD_HAND_STATUS_DATA_REQUEST_PORT);
+			= the_robot->port_manager.get_request_port <lib::bird_hand::status> (lib::bird_hand::STATUS_DATA_REQUEST_PORT);
 
-	bird_hand_configuration_reply_data_request_port
-			= the_robot->port_manager.get_request_port<
-					lib::bird_hand_configuration> (
-					BIRD_HAND_CONFIGURATION_DATA_REQUEST_PORT);
+	bird_hand_configuration_reply_data_request_port = the_robot->port_manager.get_request_port <
+			lib::bird_hand::configuration> (lib::bird_hand::CONFIGURATION_DATA_REQUEST_PORT);
 
 	assert(the_robot);
 
 }
 
-ui_bird_hand_robot::~ui_bird_hand_robot() {
+EcpRobot::~EcpRobot()
+{
 	delete the_robot;
 }
 
 // do odczytu stanu poczatkowego robota
-void ui_bird_hand_robot::get_controller_state(
-		lib::controller_state_t & robot_controller_initial_state_l) {
+void EcpRobot::get_controller_state(lib::controller_state_t & robot_controller_initial_state_l)
+{
 	// Zlecenie odczytu numeru modelu i korektora kinematyki
 
 
@@ -67,12 +68,12 @@ void ui_bird_hand_robot::get_controller_state(
 
 	the_robot->execute_motion();
 
-	robot_controller_initial_state_l
-			= the_robot->reply_package.controller_state;
+	robot_controller_initial_state_l = the_robot->reply_package.controller_state;
 	the_robot->synchronised = robot_controller_initial_state_l.is_synchronised;
 }
 
-void ui_bird_hand_robot::execute_motion(void) {
+void EcpRobot::execute_motion(void)
+{
 
 	// Zlecenie wykonania ruchu przez robota jest to polecenie dla EDP
 
@@ -86,4 +87,6 @@ void ui_bird_hand_robot::execute_motion(void) {
 }
 // ---------------------------------------------------------------
 
-
+}
+} //namespace ui
+} //namespace mrrocpp

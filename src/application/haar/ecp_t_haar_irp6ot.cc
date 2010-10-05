@@ -1,7 +1,7 @@
 #include "ecp_t_haar_irp6ot.h"
 
 #include <iostream>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 namespace mrrocpp {
 namespace ecp {
@@ -42,10 +42,10 @@ haar::haar(lib::configurator &_config) :
 	}
 
 	//Create cvFraDIA sensor - for testing purposes.
-	sensor_m[lib::SENSOR_CVFRADIA] = new fradia_sensor_haar_detect(this->config, "[vsp_cvfradia]");
+	sensor_m[ecp_mp::sensor::SENSOR_FRADIA] = new fradia_sensor_haar_detect(this->config, "[vsp_cvfradia]");
 
 	//Configure sensor.
-	sensor_m[lib::SENSOR_CVFRADIA]->configure_sensor();
+	sensor_m[ecp_mp::sensor::SENSOR_FRADIA]->configure_sensor();
 
 	ecp_m_robot = new robot(*this);
 
@@ -53,14 +53,14 @@ haar::haar(lib::configurator &_config) :
 	planar_vis->sensor_m = sensor_m;
 
 	//Smooth generator
-	smooth_gen = new common::generator::smooth(*this, true);
+	//smooth_gen = new common::generator::newsmooth(*this, true);
 	bef_gen = new common::generator::bias_edp_force(*this);
 	//gripper approach constructor (task&, no_of_steps)
 	ga_gen = new common::generator::tff_gripper_approach(*this, 8);
 	//Linear generator.
 	linear_gen = NULL;
 
-	sr_ecp_msg->message("ECP PW loaded");
+	sr_ecp_msg->message("ecp PW loaded");
 }
 
 void haar::main_task_algorithm(void) {

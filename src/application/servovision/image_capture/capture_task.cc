@@ -7,8 +7,8 @@
 
 #include "capture_task.h"
 
-#include "lib/logger.h"
-#include "ecp/irp6ot_m/ecp_r_irp6ot_m.h"
+#include "base/lib/logger.h"
+#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
 
 using namespace logger;
 
@@ -25,7 +25,7 @@ CaptureTask::CaptureTask(mrrocpp::lib::configurator& configurator) :
 	log("CaptureTask::CaptureTask()\n");
 	log_enabled = log_dbg_enabled = true;
 	ecp_m_robot = new ecp::irp6ot_m::robot(*this);
-	smoothGen = new mrrocpp::ecp::common::generator::smooth(*this, true);
+	smoothGen = new mrrocpp::ecp::common::generator::newsmooth(*this, lib::ECP_XYZ_ANGLE_AXIS, 6);
 	fradiaSensor = new capture_image_sensor(configurator, "[capture_task_fradia_config]");
 	fradiaSensor->configure_sensor();
 	et.captureNow = false;
@@ -51,18 +51,18 @@ CaptureTask::~CaptureTask()
 }
 
 void CaptureTask::main_task_algorithm(void) {
-	/*double v[MAX_SERVOS_NR] = { 0.20, 0.20, 0.01, 0.20, 0.20, 0.20, 0.20, 0.01 };
-	 double a[MAX_SERVOS_NR] = { 0.15, 0.15, 0.5, 0.15, 0.15, 0.15, 0.15, 0.001 };
+	/*double v[lib::MAX_SERVOS_NR] = { 0.20, 0.20, 0.01, 0.20, 0.20, 0.20, 0.20, 0.01 };
+	 double a[lib::MAX_SERVOS_NR] = { 0.15, 0.15, 0.5, 0.15, 0.15, 0.15, 0.15, 0.001 };
 
-	 double initialPositionJoints[MAX_SERVOS_NR] = { 0, -0.010, -1.391, 0.222, 0.0, 4.719, 0.0, 0.075 };
+	 double initialPositionJoints[lib::MAX_SERVOS_NR] = { 0, -0.010, -1.391, 0.222, 0.0, 4.719, 0.0, 0.075 };
 
 	 smoothGen->reset();
 	 smoothGen->set_absolute();
 	 smoothGen->load_coordinates(lib::ECP_JOINT, v, a, initialPositionJoints, true);
 	 smoothGen->Move();*/
 
-	//	double v[MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
-	//	double a[MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
+	//	double v[lib::MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
+	//	double a[lib::MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
 	//
 	//	smoothGen->reset();
 	//	smoothGen->set_absolute();
@@ -112,17 +112,24 @@ void CaptureTask::main_task_algorithm(void) {
 }
 
 void CaptureTask::nextPosition(double deltaX, double deltaY, double deltaZ) {
-	double
-			v[MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
-	double
-			a[MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
+	//double
+		//	v[lib::MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
+	//double
+		//	a[lib::MAX_SERVOS_NR] = { 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02 };
 
 	et.x += deltaX;
 	et.y += deltaY;
 	et.z += deltaZ;
 
-	smoothGen->load_xyz_angle_axis(v, a, deltaX, deltaY, deltaZ, 0, 0, 0, 0, 0,
-			true);
+	std::vector <double> coordinates(6);
+
+	coordinates[0] = deltaX;
+	coordinates[1] = deltaY;
+	coordinates[2] = deltaZ;
+	coordinates[3] = 0.0;
+	coordinates[4] = 0.0;
+	coordinates[5] = 0.0;
+	smoothGen->load_relative_angle_axis_trajectory_pose(deltaX, deltaY, deltaZ, 0, 0, 0);
 	smoothGen->Move();
 }
 

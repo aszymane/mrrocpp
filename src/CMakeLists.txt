@@ -34,7 +34,9 @@ CMAKE_DEPENDENT_OPTION(ROBOT_IRP6_POSTUMENT_TFG
 	ON "ROBOT_IRP6_POSTUMENT" OFF)
 option(ROBOT_IRP6_MECHATRONICS "Build support for IRp6 robot located at Mechatronics Deptartment" ON)
 option(ROBOT_POLYCRANK "Build support for Polycrank robot" ON)
+if(QNXNTO)
 option(ROBOT_SPEAKER "Build support for speaker robot" ON)
+endif(QNXNTO)
 
 option(ROBOTS_SWARMITFIX "Build support for SwarmItFIX robots" ON)
 CMAKE_DEPENDENT_OPTION(ROBOT_SHEAD
@@ -50,6 +52,10 @@ CMAKE_DEPENDENT_OPTION(ROBOT_SPKM
 CMAKE_DEPENDENT_OPTION(ROBOT_BIRD_HAND
 	"Build support for three finger robot hand"
 	ON "ROBOTS_SWARMITFIX" OFF)
+	
+CMAKE_DEPENDENT_OPTION(ROBOT_SARKOFAG
+	"Build support for sarkofag"
+	ON "ROBOTS_SWARMITFIX" OFF)
 
 option(USE_MESSIP "Use MESSIP TCP messaging protocol" OFF)
 
@@ -61,25 +67,24 @@ if (QNXNTO)
 	# keep this flag until bug in QNX stack alignment is fixed
 	add_definitions (-DEIGEN_DONT_ALIGN)	
 	set(EIGEN2_INCLUDE_DIR "${MRLIB}/include/eigen2") 
-	set(LIBXML2_INCLUDE_DIR "${MRLIB}/include")
+	set(LIBXML2_INCLUDE_DIR "${MRLIB}/include/libxml2")
 	set(Boost_INCLUDE_DIR "${MRLIB}/include")
 
 	# Boost is provided by mrlib repository
 	set(BOOST_ROOT "${MRLIB}")
-	find_package(Boost 1.39 COMPONENTS thread serialization)
+	find_package(Boost 1.41 COMPONENTS thread serialization filesystem system)
 	# include boost compatibility layer
 	include_directories ("${Boost_INCLUDE_DIRS}/boost/compatibility/cpp_c_headers") 
 
 	# FIXME: define libxml2 libraries to use
 	find_library(LIBXML2_LIBRARY xml2 "${MRLIB}/lib")
-	find_library(LIBICONV_LIBRARY iconv "${MRLIB}/lib")
-	set(LIBXML2_LIBRARIES ${LIBXML2_LIBRARY} ${LIBICONV_LIBRARY})
+	set(LIBXML2_LIBRARIES ${LIBXML2_LIBRARY})
 	
 	# QNX provides networking with separate library
 	set (COMPATIBILITY_LIBRARIES socket m)
 else (QNXNTO) # Linux, etc.
 	# find dependency packages
-	find_package(Boost 1.39 COMPONENTS thread serialization)
+	find_package(Boost 1.41 COMPONENTS thread serialization filesystem system)
 	find_package(Threads REQUIRED)
 	find_package(LibXml2 REQUIRED)
 
@@ -114,12 +119,11 @@ set(COMMON_LIBRARIES mrrocpp ${COMMON_LIBRARIES}
 )
 
 # Recurse into subdirectories.
-add_subdirectory (lib)
-add_subdirectory (kinematics)
-add_subdirectory (edp)
-add_subdirectory (ecp)
-add_subdirectory (ecp_mp)
-add_subdirectory (mp)
+add_subdirectory (base)
+add_subdirectory (sensor)
+add_subdirectory (generator)
+add_subdirectory (subtask)
+add_subdirectory (robot)
 add_subdirectory (ui)
 add_subdirectory (application)
-add_subdirectory (vsp)
+

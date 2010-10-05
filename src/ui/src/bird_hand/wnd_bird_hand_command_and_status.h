@@ -8,8 +8,16 @@
 #ifndef __WND_BIRD_HAND_COMMAND_AND_STATUS_H
 #define __WND_BIRD_HAND_COMMAND_AND_STATUS_H
 
-#include "ui/ui.h"
-#include "ui/ui_robot.h"
+#include "ui/src/ui.h"
+#include "ui/src/ui_robot.h"
+
+namespace mrrocpp {
+namespace ui {
+namespace common {
+class Interface;
+}
+
+namespace bird_hand {
 
 //
 //
@@ -20,18 +28,19 @@
 
 // super klasa agregujaca porozrzucane struktury
 
-class Ui;
-class UiRobotBirdHand;
 
-class WndBirdHandCommandAndStatus {
+class UiRobot;
+
+class WndCommandAndStatus
+{
 private:
-	Ui& ui;
-	UiRobotBirdHand& bird_hand;
+	common::Interface& interface;
+	UiRobot& bird_hand;
 
 public:
 	bool is_open;
 
-	WndBirdHandCommandAndStatus(Ui& _ui, UiRobotBirdHand& _bird_hand);
+	WndCommandAndStatus(common::Interface& _interface, UiRobot& _bird_hand);
 
 	int get_command();
 	int set_status();
@@ -126,6 +135,10 @@ public:
 	int copy_ring_f_2_command();
 
 };
+
+}
+} //namespace ui
+} //namespace mrrocpp
 
 #endif
 

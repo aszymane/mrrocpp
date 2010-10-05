@@ -8,13 +8,11 @@
 #ifndef ECP_G_IMG_SW_H_
 #define ECP_G_IMG_SW_H_
 
-#include "ecp/common/generator/ecp_generator.h"
-#include "lib/mrmath/mrmath.h"
-#include "ecp_mp/sensor/ecp_mp_s_fradia_sensor.h"
-#include "ecp_mp/sensor/ecp_mp_sensor.h"
+#include "base/ecp/ecp_generator.h"
+#include "sensor/fradia/ecp_mp_s_fradia_sensor.h"
+#include "base/lib/mrmath/mrmath.h"
+//#include "ecp_mp/sensor/ecp_mp_sensor.h"
 #include "image_switching_types.h"
-//#include <boost/shared_ptr.hpp>
-#include "lib/logger.h"
 
 namespace mrrocpp {
 
@@ -28,7 +26,7 @@ namespace generator {
  *  @{
  */
 
-class ecp_g_image_switching: public mrrocpp::ecp::common::generator::generator
+class ecp_g_image_switching: public common::generator::generator
 {
 public:
 	ecp_g_image_switching(mrrocpp::ecp::common::task::task & _ecp_task,ecp_mp::sensor::fradia_sensor <image_switching_types::fradia_configuration, image_switching_types::position_based_reading, image_switching_types::position_based_searching> *vspfradia);

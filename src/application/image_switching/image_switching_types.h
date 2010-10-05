@@ -43,6 +43,11 @@ struct image_based_dimensions
 
 struct fradia_configuration
 {
+
+};
+
+struct position_based_searching
+{
 	bool search;
 };
 

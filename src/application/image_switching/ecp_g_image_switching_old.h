@@ -11,7 +11,7 @@
 #include "base/ecp/ecp_generator.h"
 #include "sensor/fradia/ecp_mp_s_fradia_sensor.h"
 #include "base/lib/mrmath/mrmath.h"
-//#include "ecp_mp/sensor/ecp_mp_sensor.h"
+#include "base/ecp_mp/ecp_mp_sensor.h"
 #include "image_switching_types.h"
 
 namespace mrrocpp {

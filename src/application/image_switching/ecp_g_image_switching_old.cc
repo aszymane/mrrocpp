@@ -6,6 +6,7 @@
  */
 
 #include "ecp_g_image_switching.h"
+#include "base/ecp/ecp_robot.h"
 
 #include <iostream>
 
@@ -35,7 +36,7 @@ ecp_g_image_switching::ecp_g_image_switching(mrrocpp::ecp::common::task::task & 
 	search=true;
 	vsp_fradia=vspfradia;
 	logger::log("\nvsp_fradia: %d\n",vsp_fradia);
-	sensor_m[lib::SENSOR_CVFRADIA] = vsp_fradia;
+	sensor_m[ecp_mp::sensor::SENSOR_FRADIA] = vsp_fradia;//lib::SENSOR_CVFRADIA
 
 
 //	char kp_name[] = { "kp" };

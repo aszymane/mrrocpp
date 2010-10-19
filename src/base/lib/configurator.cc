@@ -100,14 +100,23 @@ void configurator::read_property_tree_from_file(boost::property_tree::ptree & pt
 void configurator::change_config_file(const std::string & _ini_file)
 {
 #ifdef USE_MESSIP_SRR
-	configfile_t configfile;
-	snprintf(configfile, sizeof(configfile), "%s", _ini_file.c_str());
+	config_query_t query, reply;
 
-	boost::mutex::scoped_lock l(access_mutex);
+	query.key = _ini_file;
+	query.flag = true;
 
-	messip::port_send_sync(this->ch,
-			CONFIG_CHANGE_INI_FILE, 0,
-			configfile);
+	{
+		boost::mutex::scoped_lock l(access_mutex);
+
+		messip::port_send(this->ch,
+				0, 0,
+				query, reply);
+	}
+
+	if(!reply.flag) {
+		// TODO: throw
+		std::cerr << "change_config_file to " << _ini_file << " failed" << std::endl;
+	}
 #else
 	boost::mutex::scoped_lock l(access_mutex);
 
@@ -199,23 +208,6 @@ std::string configurator::return_mrrocpp_network_path() const
 
 bool configurator::exists(const char* _key, const char* __section_name) const
 {
-#ifdef USE_MESSIP_SRR
-	const char *_section_name = (__section_name) ? __section_name : section_name.c_str();
-
-	query_t query;
-	snprintf(query.key, sizeof(query.key), "%s", _key);
-	snprintf(query.section, sizeof(query.section), "%s", _section_name);
-
-	bool value;
-
-	boost::mutex::scoped_lock l(access_mutex);
-
-	messip::port_send(this->ch,
-			CONFIG_EXISTS, 0,
-			query, value);
-
-	return value;
-#else
 	const char *_section_name = (__section_name) ? __section_name : section_name.c_str();
 
 	try {
@@ -225,9 +217,7 @@ bool configurator::exists(const char* _key, const char* __section_name) const
 	}
 
 	return true;
-#endif /* USE_MESSIP_SRR */
 }
-
 
 pid_t configurator::process_spawn(const std::string & _section_name)
 {
@@ -248,7 +238,7 @@ pid_t configurator::process_spawn(const std::string & _section_name)
 
 		if (access(opendir_path.c_str(), R_OK) != 0) {
 			printf("spawned node absent: %s\n", opendir_path.c_str());
-			throw std::logic_error("spawned node absent: " + opendir_path);
+			//throw std::logic_error("spawned node absent: " + opendir_path);
 		}
 	}
 

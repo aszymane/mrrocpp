@@ -235,9 +235,10 @@ int EDP_speaker_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *c
 					|| (access(tmp2_string.c_str(), R_OK) == 0)) {
 				interface.ui_msg->message("edp_speaker already exists");
 
-			} else if (interface.check_node_existence(interface.speaker->state.edp.node_name, std::string("edp_speaker"))) {
+			} else if (interface.check_node_existence(interface.speaker->state.edp.node_name, "edp_speaker")) {
 
-				interface.speaker->state.edp.node_nr = interface.config->return_node_number(interface.speaker->state.edp.node_name);
+				interface.speaker->state.edp.node_nr
+						= interface.config->return_node_number(interface.speaker->state.edp.node_name);
 
 				interface.speaker->ui_ecp_robot
 						= new ui::speaker::EcpRobot(&interface.speaker->state.edp, *interface.config, *interface.all_ecp_msg);
@@ -251,18 +252,7 @@ int EDP_speaker_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *c
 
 					interface.speaker->state.edp.state = 1;
 
-					/*
-					 tmp = 0;
-					 // kilka sekund  (~1) na otworzenie urzadzenia
-					 while((interface.speaker->state.edp.reader_fd = name_open(ini_con->edp_speaker->network_reader_attach_point,
-					 NAME_FLAG_ATTACH_GLOBAL))  < 0)
-					 if((tmp++)<20)
-					 delay(50);
-					 else{
-					 perror("blad odwolania do READER_START");
-					 break;
-					 };
-					 */
+					//interface.speaker->connect_to_reader();
 
 					//interface.speaker->state.edp.state=1;// edp wlaczone reader czeka na start
 					interface.speaker->state.edp.is_synchronised = true;
@@ -280,42 +270,17 @@ int EDP_speaker_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *c
 }
 
 int EDP_speaker_slay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
-
 {
-
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	// dla robota speaker
-	if (interface.speaker->state.edp.state > 0) { // jesli istnieje EDP
-		if (interface.speaker->state.edp.reader_fd >= 0) {
-			if (name_close(interface.speaker->state.edp.reader_fd) == -1) {
-				fprintf(stderr, "UI: EDP_speaker, %s:%d, name_close(): %s\n", __FILE__, __LINE__, strerror(errno));
-			}
-		}
-
-		delete interface.speaker->ui_ecp_robot;
-		interface.speaker->state.edp.state = 0; // edp wylaczone
-		interface.speaker->state.edp.is_synchronised = false;
-
-		interface.speaker->state.edp.pid = -1;
-		interface.speaker->state.edp.reader_fd = -1;
-
-		close_wnd_speaker_play(NULL, NULL, NULL);
-
-	}
-
-	// modyfikacja menu
-	interface.manage_interface();
+	interface.speaker->EDP_slay_int();
 
 	return (Pt_CONTINUE);
-
 }
 
 int pulse_reader_speaker_start(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
-
 {
-
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
@@ -323,7 +288,6 @@ int pulse_reader_speaker_start(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackI
 		process_control_window_init(widget, apinfo, cbinfo);
 
 	return (Pt_CONTINUE);
-
 }
 
 int pulse_reader_speaker_stop(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
@@ -358,45 +322,9 @@ int pulse_ecp_speaker(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cb
 
 {
 
-	char pulse_code = ECP_TRIGGER;
-	long pulse_value = 1;
-
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
-
-	if (interface.speaker->state.edp.is_synchronised > 0) { // o ile ECP dziala (sprawdzanie poprzez dzialanie odpowiedniego EDP)
-		if (interface.speaker->state.ecp.trigger_fd < 0) {
-
-			short tmp = 0;
-			// kilka sekund  (~1) na otworzenie urzadzenia
-			// zabezpieczenie przed zawieszeniem poprzez wyslanie sygnalu z opoznieniem
-			ualarm(ui::common::SIGALRM_TIMEOUT, 0);
-			while ((interface.speaker->state.ecp.trigger_fd
-					= name_open(interface.speaker->state.ecp.network_trigger_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL))
-					< 0) {
-				if (errno == EINTR)
-					break;
-				if ((tmp++) < lib::CONNECT_RETRY)
-					delay(lib::CONNECT_DELAY);
-				else {
-					perror("blad odwolania do ECP_TRIGGER");
-				};
-			}
-			// odwolanie alarmu
-			ualarm((useconds_t)(0), 0);
-		}
-
-		if (interface.speaker->state.ecp.trigger_fd >= 0) {
-			if (MsgSendPulse(interface.speaker->state.ecp.trigger_fd, sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value)
-					== -1) {
-
-				fprintf(stderr, "Blad w wysylaniu pulsu do ecp error: %s \n", strerror(errno));
-				delay(1000);
-			}
-		} else {
-			printf("W PULS ECP:  BLAD name_open \n");
-		}
-	}
+	interface.speaker->pulse_ecp();
 
 	return (Pt_CONTINUE);
 

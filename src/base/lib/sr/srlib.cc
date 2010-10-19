@@ -54,7 +54,7 @@ sr::sr(process_type_t process_type, const std::string & process_name, const std:
 	sr_message.process_type = process_type;
 	sr_message.message_type = NEW_MESSAGE;
 	strcpy(sr_message.process_name, process_name.c_str());
-	for (int i = 0; i < ERROR_TAB_SIZE; i++) {
+	for (size_t i = 0; i < ERROR_TAB_SIZE; i++) {
 		error_tab[i] = 0;
 	}
 
@@ -67,7 +67,9 @@ sr::sr(process_type_t process_type, const std::string & process_name, const std:
 
 void sr::send_package(void)
 {
-	clock_gettime(CLOCK_REALTIME, &sr_message.ts);
+	if(clock_gettime(CLOCK_REALTIME, &sr_message.ts) == -1) {
+		perror("clock_gettime()");
+	}
 	sender->send_package(sr_message);
 }
 

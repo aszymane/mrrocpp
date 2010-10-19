@@ -25,7 +25,9 @@
 #include <Eigen/Core>
 
 #if defined(USE_MESSIP_SRR)
-#include "base/lib/messip/messip.h"
+#include "base/lib/messip/messip_dataport.h"
+#include "base/lib/config_types.h"
+#include <boost/property_tree/exceptions.hpp>
 #else
 #include <boost/property_tree/ptree.hpp>
 #endif
@@ -67,6 +69,9 @@ private:
 	//! Communication channel to the configuration server
 	messip_channel_t *ch;
 #else
+	//! Property trees of configuration files
+	boost::property_tree::ptree common_file_pt, file_pt;
+
 	//! Configuration file location
 	std::string file_location;
 
@@ -84,9 +89,6 @@ private:
 	 * @return path to the configuration file
 	 */
 	std::string get_common_config_file_path() const;
-
-	//! Property trees of configuration files
-	boost::property_tree::ptree common_file_pt, file_pt;
 
 	/**
 	 * Read property tree from configuration file
@@ -189,10 +191,6 @@ public:
 	template <class Type>
 	Type value(const std::string & _key, const std::string & __section_name) const
 	{
-#if defined(USE_MESSIP_SRR)
-		// TODO: ask configuration server
-		return Type();
-#else
 		// initialize property tree path
 		std::string pt_path = __section_name;
 
@@ -205,7 +203,22 @@ public:
 		pt_path += _key;
 
 		boost::mutex::scoped_lock l(access_mutex);
+#ifdef USE_MESSIP_SRR
+		config_query_t query, reply;
 
+		query.key = pt_path;
+		query.flag = false;
+
+		messip::port_send(this->ch,
+				0, 0,
+				query, reply);
+
+		if(reply.flag) {
+			return boost::lexical_cast<Type>(reply.key);
+		} else {
+			throw boost::property_tree::ptree_error("remote config query failed");
+		}
+#else
 		try {
 			return file_pt.get<Type>(pt_path);
 		} catch (boost::property_tree::ptree_error & e) {

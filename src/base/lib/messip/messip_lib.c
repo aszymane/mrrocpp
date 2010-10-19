@@ -54,6 +54,8 @@
 #include <endian.h>
 #elif defined(__FreeBSD__)
 #include <sys/endian.h>
+#elif defined(__APPLE__)  && defined(__MACH__)
+#include <machine/endian.h>
 #elif defined(__QNX__)
 #include <sys/param.h>
 #include <sys/netmgr.h>
@@ -2468,6 +2470,7 @@ messip_reply( messip_channel_t * ch,
 			free(symbols);
 	    	}
 #endif /* __gnu_linux__ */
+			assert(0);
 			ret = -1;
 	} /* switch */
 
@@ -2487,7 +2490,7 @@ messip_reply( messip_channel_t * ch,
 }								// messip_reply
 
 
-#ifndef __FreeBSD__
+#if !defined(__FreeBSD__) && !defined(__APPLE__) && !defined(__MACH__)
 
 typedef struct
 {

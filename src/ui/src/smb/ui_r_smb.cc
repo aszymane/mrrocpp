@@ -51,7 +51,7 @@ int UiRobot::reload_configuration()
 				// ini_con->create_edp_smb (ini_con->ui->edp_smb_section);
 
 				state.edp.pid = -1;
-				state.edp.reader_fd = -1;
+				state.edp.reader_fd = common::edp_state_def::invalid_reader_fd;
 				state.edp.state = 0;
 
 				if (interface.config->exists(lib::ROBOT_TEST_MODE, state.edp.section_name))
@@ -157,11 +157,12 @@ int UiRobot::manage_interface()
 	return 1;
 }
 
-int UiRobot::delete_ui_ecp_robot()
+
+void UiRobot::delete_ui_ecp_robot()
 {
 	delete ui_ecp_robot;
-	return 1;
 }
+
 }
 } //namespace ui
 } //namespace mrrocpp

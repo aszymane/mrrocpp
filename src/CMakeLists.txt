@@ -57,7 +57,7 @@ CMAKE_DEPENDENT_OPTION(ROBOT_SARKOFAG
 	"Build support for sarkofag"
 	ON "ROBOTS_SWARMITFIX" OFF)
 
-option(USE_MESSIP "Use MESSIP TCP messaging protocol" OFF)
+option(USE_MESSIP "Use MESSIP TCP messaging protocol" ON)
 
 # QNX is default MRROC++ target
 if (QNXNTO)
@@ -92,6 +92,7 @@ if (QNXNTO)
 	set(CMAKE_CXX_FLAGS "-w9 -Wpointer-arith -Wwrite-strings -Wno-sign-compare -O1")
 else (QNXNTO) # Linux, etc.
 	# find dependency packages
+        set(BOOST_ROOT "/opt/boost")
 	find_package(Boost 1.41 COMPONENTS thread serialization filesystem system)
 	find_package(Threads REQUIRED)
 	find_package(LibXml2 REQUIRED)

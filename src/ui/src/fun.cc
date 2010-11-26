@@ -548,8 +548,11 @@ int file_selection_window_send_location(PtWidget_t *widget, ApInfo_t *apinfo, Pt
 			if ((item->type) == Pt_FS_FILE) {
 				// To sie pozniej sprawdzi, czy wogule jest wzorzec znaleziony
 				std::string str_fullpath(item->fullpath);
-				std::string str_tail = str_fullpath.substr(str_fullpath.rfind(interface.mrrocpp_local_path)
-						+ interface.mrrocpp_local_path.length());
+
+				std::string tmp_str = interface.mrrocpp_local_path;
+				tmp_str += "../";
+
+				std::string str_tail = str_fullpath.substr(str_fullpath.rfind(tmp_str) + tmp_str.length());
 				//fprintf(stderr, "mrrocpp_local_path: %s\n", interface.mrrocpp_local_path.c_str());
 				//fprintf(stderr, "fullpath: %s\n", item->fullpath);
 				//fprintf(stderr, "tail: %s\n", str_tail.c_str());
@@ -559,6 +562,7 @@ int file_selection_window_send_location(PtWidget_t *widget, ApInfo_t *apinfo, Pt
 
 				// interface.config_file = buff;
 				interface.config_file = str_tail;
+				std::cout << str_tail << std::endl;
 
 				PtSetResource(ABW_PtText_config_file, Pt_ARG_TEXT_STRING, interface.config_file.c_str(), 0);
 				PtDamageWidget(ABW_PtText_config_file);
@@ -1253,19 +1257,19 @@ int all_robots_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo, PtC
 	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
 			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
 		// ruch do pozcyji synchronizacji dla Irp6_on_track i dla dalszych analogicznie
-		if (interface.check_synchronised_and_loaded(interface.irp6ot_m->state))
+		if (interface.irp6ot_m->check_synchronised_and_loaded())
 			irp6ot_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.irp6ot_tfg->state))
+		if (interface.irp6ot_tfg->check_synchronised_and_loaded())
 			irp6ot_tfg_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.irp6p_m->state))
+		if (interface.irp6p_m->check_synchronised_and_loaded())
 			irp6p_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.irp6p_tfg->state))
+		if (interface.irp6p_tfg->check_synchronised_and_loaded())
 			irp6p_tfg_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.sarkofag->state))
+		if (interface.sarkofag->check_synchronised_and_loaded())
 			sarkofag_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.conveyor->state))
+		if (interface.conveyor->check_synchronised_and_loaded())
 			conveyor_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.check_synchronised_and_loaded(interface.irp6m_m->state))
+		if (interface.irp6m_m->check_synchronised_and_loaded())
 			irp6m_move_to_preset_position(widget, apinfo, cbinfo);
 	}
 
@@ -1359,8 +1363,13 @@ int MPup_int(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 				short tmp = 0;
 				// kilka sekund  (~1) na otworzenie urzadzenia
-				while ((interface.mp.pulse_fd
-						= name_open(interface.mp.network_pulse_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL)) < 0)
+				while ((interface.mp.pulse_fd =
+#if !defined(USE_MESSIP_SRR)
+						name_open(interface.mp.network_pulse_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL)) < 0
+#else
+					messip::port_connect(interface.mp.network_pulse_attach_point)) == NULL
+#endif
+					)
 					if ((tmp++) < lib::CONNECT_RETRY)
 						delay(lib::CONNECT_DELAY);
 					else {
@@ -1400,7 +1409,11 @@ int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 			pulse_stop_mp(widget, apinfo, cbinfo);
 		}
 
+#if !defined(USE_MESSIP_SRR)
 		name_close(interface.mp.pulse_fd);
+#else
+		messip::port_disconnect(interface.mp.pulse_fd);
+#endif
 
 		// 	printf("dddd: %d\n", SignalKill(ini_con->mp-
 		// 	printf("mp slay\n");
@@ -1412,13 +1425,13 @@ int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 	// 	kill(interface.mp_pid,SIGTERM);
 	// 	printf("mp pupa po kill\n");
 	interface.mp.pid = -1;
-	interface.mp.pulse_fd = -1;
+	interface.mp.pulse_fd = ui::common::invalid_fd;
 
-	interface.deactivate_ecp_trigger(interface.irp6ot_m->state);
-	interface.deactivate_ecp_trigger(interface.irp6p_m->state);
-	interface.deactivate_ecp_trigger(interface.conveyor->state);
-	interface.deactivate_ecp_trigger(interface.speaker->state);
-	interface.deactivate_ecp_trigger(interface.irp6m_m->state);
+	interface.irp6ot_m->deactivate_ecp_trigger();
+	interface.irp6p_m->deactivate_ecp_trigger();
+	interface.conveyor->deactivate_ecp_trigger();
+	interface.speaker->deactivate_ecp_trigger();
+	interface.irp6m_m->deactivate_ecp_trigger();
 
 	// modyfikacja menu
 	interface.manage_interface();

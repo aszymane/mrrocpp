@@ -113,6 +113,7 @@ public:
 	std::string sr_attach_point;
 	std::string ui_node_name; // nazwa wezla na ktorym jest uruchamiany UI
 
+	std::string mrrocpp_bin_to_root_path;
 
 	// The Ui robots
 	bird_hand::UiRobot *bird_hand;
@@ -141,22 +142,17 @@ public:
 	int fill_program_node_list(void);
 	int get_default_configuration_file_name(void);
 	int set_default_configuration_file_name(void);
-	bool check_synchronised_or_inactive(ecp_edp_ui_robot_def &robot);
-	bool check_synchronised_and_loaded(ecp_edp_ui_robot_def &robot);
-	bool check_loaded_or_inactive(ecp_edp_ui_robot_def &robot);
-	bool check_loaded(ecp_edp_ui_robot_def &robot);
 	int check_edps_state_and_modify_mp_state(void);
 	int check_gns(void);
 	bool check_node_existence(const std::string & _node, const std::string & beginnig_of_message);
-	bool deactivate_ecp_trigger(ecp_edp_ui_robot_def &robot_l);
 	int execute_mp_pulse(char pulse_code);
 
 	//! TODO: throw an exception (assumed inheritance from std::exception)
-	void pulse_reader_execute(edp_state_def::reader_fd_t coid, int code, int value);
-	int set_toggle_button(PtWidget_t *widget);
-	int unset_toggle_button(PtWidget_t *widget);
-	int block_widget(PtWidget_t *widget);
-	int unblock_widget(PtWidget_t *widget);
+
+	void set_toggle_button(PtWidget_t *widget);
+	void unset_toggle_button(PtWidget_t *widget);
+	void block_widget(PtWidget_t *widget);
+	void unblock_widget(PtWidget_t *widget);
 	void create_threads();
 };
 

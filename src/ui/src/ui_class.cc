@@ -60,6 +60,7 @@ Interface::Interface() :
 	process_control_window_renew = true;
 	is_file_selection_window_open = false;
 	is_teaching_window_open = false;
+	mrrocpp_bin_to_root_path = "../../";
 
 }
 
@@ -100,6 +101,7 @@ void Interface::init()
 	binaries_local_path = cwd;
 	mrrocpp_local_path = cwd;
 	mrrocpp_local_path.erase(mrrocpp_local_path.length() - 3);// kopiowanie lokalnej sciezki bez "bin" - 3 znaki
+	//mrrocpp_local_path += "../";
 	binaries_network_path = "/net/";
 	binaries_network_path += ui_node_name;
 	binaries_network_path += binaries_local_path;
@@ -117,7 +119,7 @@ void Interface::init()
 	config_file_fullpath = "/net/";
 	config_file_fullpath += ui_node_name;
 	config_file_fullpath += mrrocpp_local_path;
-	//	config_file_fullpath += "configs";
+	config_file_fullpath += "../";
 
 	// printf ("Remember to create gns server\n");
 
@@ -136,6 +138,7 @@ void Interface::init()
 	// pierwsze zczytanie pliku konfiguracyjnego (aby pobrac nazwy dla pozostalych watkow UI)
 	if (get_default_configuration_file_name() >= 1) // zczytaj nazwe pliku konfiguracyjnego
 	{
+		std::cerr << "ui a" << std::endl;
 		initiate_configuration();
 		// sprawdza czy sa postawione gns's i ew. stawia je
 		// uwaga serwer musi byc wczesniej postawiony
@@ -153,13 +156,14 @@ void Interface::init()
 	// kolejne zczytanie pliku konfiguracyjnego
 	if (get_default_configuration_file_name() == 1) // zczytaj nazwe pliku konfiguracyjnego
 	{
+		std::cerr << "ui b" << std::endl;
 		reload_whole_configuration();
 
 	} else {
 		printf("Blad manage_default_configuration_file\n");
 		PtExit(EXIT_SUCCESS);
 	}
-
+	std::cerr << "ui c" << std::endl;
 	// inicjacja pliku z logami sr
 	check_gns();
 
@@ -174,7 +178,7 @@ void Interface::init()
 	sprintf(file_name, "/%s_sr_log", file_date);
 
 	// 	strcpy(file_name,"/pomiar.p");
-	strcpy(log_file_with_dir, "../logs/");
+	strcpy(log_file_with_dir, (mrrocpp_bin_to_root_path + "logs/").c_str());
 
 	if (access(log_file_with_dir, R_OK) != 0) {
 		mkdir(log_file_with_dir, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
@@ -343,13 +347,18 @@ void Interface::reload_whole_configuration()
 {
 
 	if (access(config_file_relativepath.c_str(), R_OK) != 0) {
-		std::cerr << "Wrong entry in default_file.cfg - load another configuration than: " << config_file_relativepath << std::endl;
-		config_file_relativepath = "../configs/common.ini";
+		std::cerr << "Wrong entry in default_file.cfg - load another configuration than: " << config_file_relativepath
+				<< std::endl;
+		config_file_relativepath = mrrocpp_bin_to_root_path + "configs/common.ini";
 	}
 
 	if ((mp.state == UI_MP_NOT_PERMITED_TO_RUN) || (mp.state == UI_MP_PERMITED_TO_RUN)) { // jesli nie dziala mp podmien mp ecp vsp
 
+
+#if !defined(USE_MESSIP_SRR)
+		// funkcja dziala niepoprawnie z config serwerem
 		config->change_config_file(config_file);
+#endif
 
 		is_mp_and_ecps_active = config->value <int> ("is_mp_and_ecps_active");
 
@@ -393,7 +402,7 @@ void Interface::reload_whole_configuration()
 
 		// sczytanie listy sekcji
 		fill_section_list(config_file_relativepath.c_str());
-		fill_section_list("../configs/common.ini");
+		fill_section_list((mrrocpp_bin_to_root_path + "configs/common.ini").c_str());
 		fill_node_list();
 		fill_program_node_list();
 
@@ -469,6 +478,9 @@ void Interface::abort_threads()
 
 bool Interface::check_node_existence(const std::string & _node, const std::string & beginnig_of_message)
 {
+#if defined(USE_MESSIP_SRR)
+	return true;
+#else
 	std::string opendir_path("/net/");
 	opendir_path += _node;
 
@@ -480,6 +492,7 @@ bool Interface::check_node_existence(const std::string & _node, const std::strin
 		return false;
 	}
 	return true;
+#endif
 }
 
 // sprawdza czy sa postawione gns's i ew. stawia je
@@ -620,30 +633,30 @@ int Interface::check_edps_state_and_modify_mp_state()
 		all_edps = UI_ALL_EDPS_NONE_EDP_ACTIVATED;
 
 		// jesli wszystkie sa zsynchronizowane
-	} else if (check_synchronised_or_inactive(irp6p_m->state) && check_synchronised_or_inactive(irp6ot_m->state)
-			&& check_synchronised_or_inactive(conveyor->state) && check_synchronised_or_inactive(speaker->state)
-			&& check_synchronised_or_inactive(irp6m_m->state) && check_synchronised_or_inactive(irp6ot_tfg->state)
-			&& check_synchronised_or_inactive(irp6p_tfg->state) && check_synchronised_or_inactive(sarkofag->state)
-			&& check_synchronised_or_inactive(bird_hand->state) && check_synchronised_or_inactive(spkm->state)
-			&& check_synchronised_or_inactive(smb->state) && check_synchronised_or_inactive(shead->state)) {
+	} else if (irp6p_m->check_synchronised_or_inactive() && irp6ot_m->check_synchronised_or_inactive()
+			&& conveyor->check_synchronised_or_inactive() && speaker->check_synchronised_or_inactive()
+			&& irp6m_m->check_synchronised_or_inactive() && irp6ot_tfg->check_synchronised_or_inactive()
+			&& irp6p_tfg->check_synchronised_or_inactive() && sarkofag->check_synchronised_or_inactive()
+			&& bird_hand->check_synchronised_or_inactive() && spkm->check_synchronised_or_inactive()
+			&& smb->check_synchronised_or_inactive() && shead->check_synchronised_or_inactive()) {
 		all_edps = UI_ALL_EDPS_LOADED_AND_SYNCHRONISED;
 
 		// jesli wszystkie sa zaladowane
-	} else if (check_loaded_or_inactive(irp6p_m->state) && check_loaded_or_inactive(irp6ot_m->state)
-			&& check_loaded_or_inactive(conveyor->state) && check_loaded_or_inactive(speaker->state)
-			&& check_loaded_or_inactive(irp6m_m->state) && check_loaded_or_inactive(irp6ot_tfg->state)
-			&& check_loaded_or_inactive(irp6p_tfg->state) && check_loaded_or_inactive(sarkofag->state)
-			&& check_loaded_or_inactive(bird_hand->state) && check_loaded_or_inactive(spkm->state)
-			&& check_loaded_or_inactive(smb->state) && check_loaded_or_inactive(shead->state))
+	} else if (irp6p_m->check_loaded_or_inactive() && irp6ot_m->check_loaded_or_inactive()
+			&& conveyor->check_loaded_or_inactive() && speaker->check_loaded_or_inactive()
+			&& irp6m_m->check_loaded_or_inactive() && irp6ot_tfg->check_loaded_or_inactive()
+			&& irp6p_tfg->check_loaded_or_inactive() && sarkofag->check_loaded_or_inactive()
+			&& bird_hand->check_loaded_or_inactive() && spkm->check_loaded_or_inactive()
+			&& smb->check_loaded_or_inactive() && shead->check_loaded_or_inactive())
 
 	{
 		all_edps = UI_ALL_EDPS_LOADED_BUT_NOT_SYNCHRONISED;
 
 		// jesli chociaz jeden jest zaladowany
-	} else if (check_loaded(irp6p_m->state) || check_loaded(irp6ot_m->state) || check_loaded(conveyor->state)
-			|| check_loaded(speaker->state) || check_loaded(irp6m_m->state) || check_loaded(irp6ot_tfg->state)
-			|| check_loaded(irp6p_tfg->state) || check_loaded(sarkofag->state) || check_loaded(bird_hand->state)
-			|| check_loaded(spkm->state) || check_loaded(smb->state) || check_loaded(shead->state))
+	} else if (irp6p_m->check_loaded() || irp6ot_m->check_loaded() || conveyor->check_loaded()
+			|| speaker->check_loaded() || irp6m_m->check_loaded() || irp6ot_tfg->check_loaded()
+			|| irp6p_tfg->check_loaded() || sarkofag->check_loaded() || bird_hand->check_loaded()
+			|| spkm->check_loaded() || smb->check_loaded() || shead->check_loaded())
 
 	{
 		all_edps = UI_ALL_EDPS_THERE_IS_EDP_LOADED_BUT_NOT_ALL_ARE_LOADED;
@@ -678,35 +691,11 @@ int Interface::check_edps_state_and_modify_mp_state()
 	return 1;
 }
 
-// ustala stan wszytkich EDP
-bool Interface::check_synchronised_or_inactive(ecp_edp_ui_robot_def& robot)
-{
-	return (((robot.is_active) && (robot.edp.is_synchronised)) || (!(robot.is_active)));
-
-}
-
-bool Interface::check_synchronised_and_loaded(ecp_edp_ui_robot_def& robot)
-{
-	return (((robot.edp.state > 0) && (robot.edp.is_synchronised)));
-
-}
-
-bool Interface::check_loaded_or_inactive(ecp_edp_ui_robot_def& robot)
-{
-	return (((robot.is_active) && (robot.edp.state > 0)) || (!(robot.is_active)));
-
-}
-
-bool Interface::check_loaded(ecp_edp_ui_robot_def& robot)
-{
-	return ((robot.is_active) && (robot.edp.state > 0));
-}
-
 // odczytuje nazwe domyslengo pliku konfiguracyjnego, w razie braku ustawia common.ini
 int Interface::get_default_configuration_file_name()
 {
 
-	FILE * fp = fopen("../configs/default_file.cfg", "r");
+	FILE * fp = fopen((mrrocpp_bin_to_root_path + "configs/default_file.cfg").c_str(), "r");
 	if (fp != NULL) {
 		//printf("alala\n");
 		char tmp_buf[255];
@@ -714,7 +703,7 @@ int Interface::get_default_configuration_file_name()
 		char *tmp_buf1 = strtok(tmp_buf, "=\n\r"); // get first token
 		config_file = tmp_buf1;
 
-		config_file_relativepath = "../";
+		config_file_relativepath = mrrocpp_bin_to_root_path;
 		config_file_relativepath += config_file;
 
 		fclose(fp);
@@ -724,14 +713,14 @@ int Interface::get_default_configuration_file_name()
 		//	printf("balala\n");
 		// jesli plik z domyslna konfiguracja (default_file.cfg) nie istnieje to utworz go i wpisz do niego common.ini
 		printf("Utworzono plik default_file.cfg z konfiguracja common.ini\n");
-		fp = fopen("../configs/default_file.cfg", "w");
+		fp = fopen((mrrocpp_bin_to_root_path + "configs/default_file.cfg").c_str(), "w");
 		fclose(fp);
 
 		config_file = "configs/common.ini";
-		config_file_relativepath = "../";
+		config_file_relativepath = mrrocpp_bin_to_root_path;
 		config_file_relativepath += config_file;
 
-		std::ofstream outfile("../configs/default_file.cfg", std::ios::out);
+		std::ofstream outfile((mrrocpp_bin_to_root_path + "configs/default_file.cfg").c_str(), std::ios::out);
 		if (!outfile.good()) {
 			std::cerr << "Cannot open file: default_file.cfg" << std::endl;
 			perror("because of");
@@ -746,10 +735,10 @@ int Interface::get_default_configuration_file_name()
 int Interface::set_default_configuration_file_name()
 {
 
-	config_file_relativepath = "../";
+	config_file_relativepath = mrrocpp_bin_to_root_path;
 	config_file_relativepath += config_file;
 
-	std::ofstream outfile("../configs/default_file.cfg", std::ios::out);
+	std::ofstream outfile((mrrocpp_bin_to_root_path + "configs/default_file.cfg").c_str(), std::ios::out);
 	if (!outfile.good()) {
 		std::cerr << "Cannot open file: default_file.cfg\n";
 		perror("because of");
@@ -797,9 +786,12 @@ int Interface::clear_all_configuration_lists()
 
 int Interface::initiate_configuration()
 {
+
+	std::cerr << "ui 1" << std::endl;
+
 	if (access(config_file_relativepath.c_str(), R_OK) != 0) {
 		fprintf(stderr, "Wrong entry in default_file.cfg - load another configuration than: %s\n", config_file_relativepath.c_str());
-		config_file_relativepath = "../configs/common.ini";
+		config_file_relativepath = mrrocpp_bin_to_root_path + "configs/common.ini";
 	}
 
 	// sprawdzenie czy nazwa sesji jest unikalna
@@ -854,7 +846,7 @@ int Interface::initiate_configuration()
 
 	// sczytanie listy sekcji
 	fill_section_list(config_file_relativepath.c_str());
-	fill_section_list("../configs/common.ini");
+	fill_section_list((mrrocpp_bin_to_root_path + "configs/common.ini").c_str());
 	fill_node_list();
 	fill_program_node_list();
 
@@ -948,89 +940,57 @@ void Interface::fill_node_list()
 	}
 }
 
-void Interface::pulse_reader_execute(edp_state_def::reader_fd_t coid, int code, int value)
-{
-#if !defined(USE_MESSIP_SRR)
-	if(MsgSendPulse(coid, sched_get_priority_min(SCHED_FIFO), code, value) == -1)
-#else
-	if(messip::port_send_pulse(coid, code, value))
-#endif
-	{
-		perror("Blad w wysylaniu pulsu do redera");
-	}
-}
-
 int Interface::execute_mp_pulse(char pulse_code)
 {
-	int ret = -2;
 
 	// printf("w send pulse\n");
 	if (mp.pulse_fd > 0) {
 		long pulse_value = 1;
-		if ((ret = MsgSendPulse(mp.pulse_fd, sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value)) == -1) {
 
+#if !defined(USE_MESSIP_SRR)
+		if (MsgSendPulse(mp.pulse_fd, sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value) == -1)
+#else
+		if(messip::port_send_pulse(mp.pulse_fd, pulse_code, pulse_value))
+#endif
+		{
 			perror("Blad w wysylaniu pulsu do mp");
 			fprintf(stderr, "Blad w wysylaniu pulsu do mp error: %s \n", strerror(errno));
 			delay(1000);
 		}
 	}
 
-	return ret;
+	return 1;
 }
 
-bool Interface::deactivate_ecp_trigger(ecp_edp_ui_robot_def& robot_l)
-{
-
-	if (robot_l.is_active) {
-		if (robot_l.ecp.trigger_fd >= 0) {
-			name_close(robot_l.ecp.trigger_fd);
-		}
-		robot_l.ecp.trigger_fd = -1;
-		robot_l.ecp.pid = -1;
-		return true;
-	}
-
-	return false;
-}
-
-int Interface::set_toggle_button(PtWidget_t * widget)
+void Interface::set_toggle_button(PtWidget_t * widget)
 {
 
 	PtSetResource(widget, Pt_ARG_FLAGS, Pt_TRUE, Pt_SET);
 	PtDamageWidget(widget);
-
-	return 1;
 }
 
-int Interface::unset_toggle_button(PtWidget_t * widget)
+void Interface::unset_toggle_button(PtWidget_t * widget)
 {
 
 	PtSetResource(widget, Pt_ARG_FLAGS, Pt_FALSE, Pt_SET);
 	PtDamageWidget(widget);
-
-	return 1;
 }
 
 // blokowanie widgetu
-int Interface::block_widget(PtWidget_t *widget)
+void Interface::block_widget(PtWidget_t *widget)
 {
 	PtSetResource(widget, Pt_ARG_FLAGS, Pt_TRUE, Pt_BLOCKED | Pt_GHOST);
 	PtDamageWidget(widget);
-
-	return 1;
 }
 
 // odblokowanie widgetu
-int Interface::unblock_widget(PtWidget_t *widget)
+void Interface::unblock_widget(PtWidget_t *widget)
 {
 	PtSetResource(widget, Pt_ARG_FLAGS, Pt_FALSE, Pt_BLOCKED | Pt_GHOST);
 	PtDamageWidget(widget);
-
-	return 1;
 }
 
 void Interface::create_threads()
-
 {
 	meb_tid = new feb_thread(main_eb);
 	ui_ecp_obj = new ecp_buffer(*this);

@@ -17,7 +17,7 @@
 //#include "../servovision/visual_servo_manager.h"
 //#include "ecp_g_image_switching_old.h"
 //#include "ecp_g_image_switching.h"
-#include "ecp_g_image_switching_test.h"
+#include "simple_binary_image_switching.h"
 
 
 #include "../servovision/single_visual_servo_manager.h"
@@ -52,7 +52,7 @@ class ecp_t_image_switching: public common::task::task {
 //	  static const double initialPositionJoints[MAX_SERVOS_NR];
 
 		shared_ptr<visual_servo_regulator> reg;
-		shared_ptr<visual_servo_manager> sm2;
+		shared_ptr<visual_servo_manager> sm;
 		shared_ptr<visual_servo> vs1;
 		shared_ptr<visual_servo> vs2;
 		shared_ptr<termination_condition> term_cond;

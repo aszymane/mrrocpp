@@ -52,7 +52,7 @@ void catch_signal(int sig)
 			_exit(EXIT_SUCCESS);
 			break;
 		case SIGSEGV:
-			fprintf(stderr, "Segmentation fault in EDP process\n");
+			std::fprintf(stderr, "Segmentation fault in EDP process\n");
 			signal(SIGSEGV, SIG_DFL);
 			break;
 	} // end: switch
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 	try {
 		// allow for empty session name for easier valgrind/tcheck_cl launching
 		if (argc < 5) {
-			fprintf(stderr, "Usage: edp_m binaries_node_name mrrocpp_path config_file edp_config_section <session_name> [rsp_attach_name]\n");
+			std::fprintf(stderr, "Usage: edp_m binaries_node_name mrrocpp_path config_file edp_config_section <session_name> [rsp_attach_name]\n");
 			exit(EXIT_FAILURE);
 		}
 

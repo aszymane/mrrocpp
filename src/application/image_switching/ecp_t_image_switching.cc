@@ -46,25 +46,25 @@ ecp_t_image_switching::ecp_t_image_switching(lib::configurator &_config): task(_
 	sr_ecp_msg->message("ECP loaded ecp_g_image_switching");
 
 
-	char config_section_name[] = { "[object_follower_pb]" };
+	char config_section_name1[] = { "[object_follower_pb]" };
+	char config_section_name2[] = { "[object_follower_sac_1]" };
 
-	shared_ptr <position_constraint> cube(new cubic_constraint(config, config_section_name));
+	shared_ptr <position_constraint> cube(new cubic_constraint(config, config_section_name1));
 
 //		log_dbg("ecp_t_objectfollower_ib::ecp_t_objectfollower_ib(): 1\n");
-		reg = shared_ptr <visual_servo_regulator> (new regulator_p(config, config_section_name));
+		reg = shared_ptr <visual_servo_regulator> (new regulator_p(config, config_section_name1));
 //		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 2\n");
-		vs1 = shared_ptr <visual_servo> (new pb_eih_visual_servo(reg, config_section_name, config));
-		vs2 = shared_ptr <visual_servo> (new pb_sac_visual_servo(reg, config_section_name, config));
+		vs1 = shared_ptr <visual_servo> (new pb_eih_visual_servo(reg, config_section_name1, config));
+		vs2 = shared_ptr <visual_servo> (new pb_sac_visual_servo(reg, config_section_name2, config));
 
-		term_cond = shared_ptr <termination_condition> (new object_reached_termination_condition(config, config_section_name));
+		term_cond = shared_ptr <termination_condition> (new object_reached_termination_condition(config, config_section_name1));
 //		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 3\n");
-//		sm = shared_ptr <single_visual_servo_manager> (new single_visual_servo_manager(*this, config_section_name, vs));
-		sm2 = shared_ptr <visual_servo_manager> (new ecp_g_image_switching_test(*this, config_section_name, vs1, vs2));
+		sm = shared_ptr <visual_servo_manager> (new simple_binary_image_switching(*this, config_section_name1, vs1, config_section_name2, vs2));
 //		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 4\n");
-		sm2->add_position_constraint(cube);
-		//sm->add_termination_condition(term_cond);
+		sm->add_position_constraint(cube);
+		sm->add_termination_condition(term_cond);
 //		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 5\n");
-		sm2->configure();
+		sm->configure();
 
 };
 

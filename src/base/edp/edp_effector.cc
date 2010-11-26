@@ -77,7 +77,7 @@ bool effector::initialize_communication()
 
 		// sprawdzenie czy nie jakis proces EDP nie zajmuje juz sprzetu
 		if (access(full_path_to_hardware_busy_attach_point.c_str(), R_OK) == 0) {
-			fprintf(stderr, "edp: hardware busy\n");
+			std::fprintf(stderr, "edp: hardware busy\n");
 			return false;
 		}
 
@@ -85,7 +85,7 @@ bool effector::initialize_communication()
 
 		if (tmp_attach == NULL) {
 			msg->message(lib::SYSTEM_ERROR, errno, "edp: hardware_busy_attach_point failed to attach");
-			fprintf(stderr, "hardware_busy_attach_point name_attach() to %s failed: %s\n", hardware_busy_attach_point.c_str(), strerror(errno));
+			std::fprintf(stderr, "hardware_busy_attach_point name_attach() to %s failed: %s\n", hardware_busy_attach_point.c_str(), strerror(errno));
 			// TODO: throw
 			return false;
 		}
@@ -97,7 +97,7 @@ bool effector::initialize_communication()
 
 	// sprawdzenie czy nie jest juz zarejestrowany server EDP
 	if (access(full_path_to_server_attach_point.c_str(), R_OK) == 0) {
-		fprintf(stderr, "edp already exists() failed: %s\n", strerror(errno));
+		std::fprintf(stderr, "edp already exists() failed: %s\n", strerror(errno));
 		return false;
 	}
 
@@ -114,7 +114,7 @@ bool effector::initialize_communication()
 
 	if (server_attach == NULL) {
 		msg->message(lib::SYSTEM_ERROR, errno, "edp: resmg failed to attach");
-		fprintf(stderr, "name_attach() failed: %s\n", strerror(errno));
+		std::fprintf(stderr, "name_attach() failed: %s\n", strerror(errno));
 		return false;
 	}
 
@@ -198,12 +198,12 @@ lib::INSTRUCTION_TYPE effector::receive_instruction(void)
 
 		if (rcvid == -1)
 		{/* Error condition, exit */
-			perror("messip::port_receive()");
+			std::perror("messip::port_receive()");
 			break;
 		}
 		else if (rcvid < -1)
 		{
-			fprintf(stderr, "ie. MESSIP_MSG_DISCONNECT\n");
+			std::fprintf(stderr, "ie. MESSIP_MSG_DISCONNECT\n");
 			continue;
 		}
 #endif /* USE_MESSIP_SRR */

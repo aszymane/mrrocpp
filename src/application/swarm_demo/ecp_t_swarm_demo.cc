@@ -1,6 +1,8 @@
-
 #include "base/ecp/ecp_task.h"
 #include "ecp_t_swarm_demo.h"
+#include "subtask/ecp_st_smooth_file_from_mp.h"
+#include "subtask/ecp_mp_st_bias_edp_force.h"
+#include "subtask/ecp_st_bias_edp_force.h"
 
 namespace mrrocpp {
 namespace ecp {
@@ -21,14 +23,22 @@ swarm_demo::swarm_demo(lib::configurator &_config) :
 	}
 
 	// utworzenie podzadan
+
+
 	{
 		sub_task::sub_task* ecpst;
+		ecpst = new sub_task::bias_edp_force(*this);
+		subtask_m[ecp_mp::sub_task::ECP_ST_BIAS_EDP_FORCE] = ecpst;
+	}
 
-		ecpst = new sub_task::sub_task_smooth_joint(*this);
-		subtask_m[ecp_mp::sub_task::ECP_ST_SMOOTH_JOINT] = ecpst;
+	{
+		sub_task::sub_task_smooth_file_from_mp* ecpst;
 
-		ecpst = new sub_task::sub_task_smooth_angle_axis(*this);
-		subtask_m[ecp_mp::sub_task::ECP_ST_SMOOTH_ANGLE_AXIS] = ecpst;
+		ecpst = new sub_task::sub_task_smooth_file_from_mp(*this, lib::ECP_JOINT);
+		subtask_m[ecp_mp::sub_task::ECP_ST_SMOOTH_JOINT_FILE_FROM_MP] = ecpst;
+
+		ecpst = new sub_task::sub_task_smooth_file_from_mp(*this, lib::ECP_XYZ_ANGLE_AXIS);
+		subtask_m[ecp_mp::sub_task::ECP_ST_SMOOTH_ANGLE_AXIS_FILE_FROM_MP] = ecpst;
 	}
 
 	sr_ecp_msg->message("ecp SWARM DEMO loaded");

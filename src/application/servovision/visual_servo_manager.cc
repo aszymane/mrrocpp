@@ -101,10 +101,10 @@ bool visual_servo_manager::next_step()
 		current_position.set_from_frame_tab(the_robot->reply_package.arm.pf_def.arm_frame);
 		current_position_saved = true;
 	}
-
+printf("aa\n"); fflush(stdout);
 	// get aggregated position change from all servos
 	lib::Homog_matrix position_change = get_aggregated_position_change();
-
+printf("bb\n"); fflush(stdout);
 	// calculate new position with respect to robot's base
 	lib::Homog_matrix next_position = current_position * position_change;
 

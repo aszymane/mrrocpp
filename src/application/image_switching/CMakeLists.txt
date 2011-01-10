@@ -3,7 +3,7 @@ add_executable(image_switching
 #	ecp_g_image_switching.cc
 	simple_binary_image_switching.cc
 	../servovision/visual_servo_manager.cc
-#    ../servovision/single_visual_servo_manager.cc
+    ../servovision/single_visual_servo_manager.cc
 	../servovision/ib_eih_visual_servo.cc
     ../servovision/pb_eih_visual_servo.cc
     ../servovision/pb_sac_visual_servo.cc

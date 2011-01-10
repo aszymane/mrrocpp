@@ -48,7 +48,9 @@ boost::shared_ptr <ecp_mp::sensor::sensor_interface> pb_visual_servo::get_vsp_fr
 
 bool pb_visual_servo::is_object_visible_in_latest_reading()
 {
-	return vsp_fradia->get_reading_message().tracking;
+	bool tr=vsp_fradia->get_reading_message().tracking;
+	printf("is_visible=%d",(int)tr); fflush(stdout);
+	return tr;
 }
 
 lib::sensor::VSP_REPORT_t pb_visual_servo::get_sensor_report()

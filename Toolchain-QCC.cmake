@@ -7,11 +7,11 @@ SET(CMAKE_SYSTEM_VERSION 6.4.1)
 
 # specify the cross compiler
 if(CMAKE_HOST_WIN32)
-SET(CMAKE_C_COMPILER   "$ENV{QNX_HOST}/usr/bin/qcc.exe")
+SET(CMAKE_C_COMPILER   "/usr/bin/qcc.exe")
 SET(CMAKE_CXX_COMPILER "$ENV{QNX_HOST}/usr/bin/QCC.exe")
 else(CMAKE_HOST_WIN32)
-SET(CMAKE_C_COMPILER   "$ENV{QNX_HOST}/usr/bin/qcc")
-SET(CMAKE_CXX_COMPILER "$ENV{QNX_HOST}/usr/bin/QCC")
+SET(CMAKE_C_COMPILER   "/opt/qnx650/host/linux/x86/usr/bin/qcc")
+SET(CMAKE_CXX_COMPILER "/opt/qnx650/host/linux/x86/usr/bin/QCC")
 endif(CMAKE_HOST_WIN32)
 
 # where is the target environment 

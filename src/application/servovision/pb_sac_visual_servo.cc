@@ -36,7 +36,7 @@ lib::Homog_matrix pb_sac_visual_servo::compute_position_change(const lib::Homog_
 	lib::Homog_matrix C_T_G(vsp_fradia->get_reading_message().position);
 	lib::Homog_matrix error_matrix;
 	lib::Homog_matrix E_T_O = !current_position;
-
+//
 //	{
 //		cout << "\nC_T_G:\n" << C_T_G << endl;
 //

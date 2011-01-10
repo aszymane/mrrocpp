@@ -36,6 +36,8 @@ protected:
 	virtual void configure_all_servos();
 };
 
+
+
 /** @} */
 
 }//namespace generator

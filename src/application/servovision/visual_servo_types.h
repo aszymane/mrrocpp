@@ -73,7 +73,7 @@ struct image_based_reading
 struct position_based_reading
 {
 	/** Set to true only if object is found in the image. */
-	bool tracking;
+	int tracking;
 
 	/** Homogeneous matrix with object position with respect to the camera. */
 	double position[3][4];

@@ -25,6 +25,9 @@ visual_servo::~visual_servo()
 
 lib::Homog_matrix visual_servo::get_position_change(const lib::Homog_matrix& current_position, double dt)
 {
+	log_dbg("visual_servo::get_position_change() begin\n");
+	log_dbg("visual_servo::get_position_change(): get_sensor_report()=%d\n", get_sensor_report());
+
 	lib::Homog_matrix delta_position;
 
 	if (get_sensor_report() == lib::sensor::VSP_SENSOR_NOT_CONFIGURED) {
@@ -46,8 +49,17 @@ lib::Homog_matrix visual_servo::get_position_change(const lib::Homog_matrix& cur
 	}
 
 	object_visible = is_object_visible_in_latest_reading();
+	lib::Homog_matrix servoss=compute_position_change(current_position, dt);
+	double tr[3], rot[3][3];
+	servoss.get_translation_vector(tr);
+	servoss.get_rotation_matrix(rot);
+	printf("change: %g,%g,%g\n",tr[0], tr[1], tr[2]);
+	printf("%g, %g, %g\n",rot[0][0], rot[0][1], rot[0][2]);
+	printf("%g, %g, %g\n",rot[1][0], rot[1][1], rot[1][2]);
+	printf("%g, %g, %g\n",rot[2][0], rot[2][1], rot[2][2]);
 
 	if (object_visible) {
+		printf("visible\n"); fflush(stdout);
 		return compute_position_change(current_position, dt);
 	}
 

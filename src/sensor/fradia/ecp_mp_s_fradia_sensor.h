@@ -263,7 +263,7 @@ template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 template <typename MESSAGE_T>
 void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::send_to_fradia(const MESSAGE_T& message)
 {
-	//	logger::log_dbg("fradia_sensor::send_to_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
+	logger::log_dbg("fradia_sensor::send_to_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
 	int result = write(sockfd, &message, sizeof(MESSAGE_T));
 	if (result < 0) {
 		throw std::runtime_error(std::string("write() failed: ") + strerror(errno));
@@ -277,7 +277,7 @@ template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 template <typename MESSAGE_T>
 MESSAGE_T fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::receive_from_fradia()
 {
-	//	logger::log_dbg("fradia_sensor::receive_from_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
+	logger::log_dbg("fradia_sensor::receive_from_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
 	MESSAGE_T message;
 
 	int result = read(sockfd, &message, sizeof(MESSAGE_T));
@@ -306,7 +306,7 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::configure_sensor()
 	command.configure_message = configure_message;
 	send_to_fradia(command);
 
-	//	logger::log_dbg("fradia_sensor::configure_sensor() 2\n");
+	logger::log_dbg("fradia_sensor::configure_sensor() 2\n");
 	FRADIA_LOAD_TASK_REPLY status = receive_from_fradia <FRADIA_LOAD_TASK_REPLY> ();
 	status.task_name[task_name_size - 1] = 0;
 	if (fradia_task != status.task_name) {
@@ -358,7 +358,7 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::initiate_reading()
 template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading()
 {
-	//logger::log_dbg("fradia_sensor::get_reading()\n");
+	logger::log_dbg("fradia_sensor::get_reading() begin\n");
 	if (report != lib::sensor::VSP_SENSOR_NOT_CONFIGURED) {
 		report = lib::sensor::VSP_READING_NOT_READY;
 	}
@@ -373,7 +373,7 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading()
 		tv.tv_sec = tv.tv_usec = 0;
 
 		int result = select(sockfd + 1, &rfds, NULL, NULL, &tv);
-		//logger::log_dbg("fradia_sensor::get_reading(): select(): %d\n", result);
+		logger::log_dbg("fradia_sensor::get_reading(): select(): %d\n", result);
 		if (result == -1) {
 			throw std::runtime_error(std::string("select() failed: ") + strerror(errno));
 		}
@@ -382,9 +382,10 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading()
 		}
 //		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 1\n");
 		reading_message = receive_from_fradia <READING_T> ();
-//		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 2\n");
+		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 2\n");
 		report = lib::sensor::VSP_REPLY_OK;
 	}
+	logger::log_dbg("fradia_sensor::get_reading() end\n");
 }
 
 template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
@@ -404,10 +405,15 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::set_initiate_message(co
 template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 const READING_T& fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading_message() const
 {
-	//logger::log_dbg("fradia_sensor::get_reading_message()\n");
+	logger::log_dbg("fradia_sensor::get_reading_message()\n");
 
 	if (report == lib::sensor::VSP_SENSOR_NOT_CONFIGURED) {
 		throw std::logic_error("fradia_sensor::get_reading_message(): report == lib::VSP_SENSOR_NOT_CONFIGURED");
+	}
+
+	char *reading_ptr = (char *)&reading_message;
+	for(int i=0; i<sizeof(READING_T); ++i){
+		logger::log_dbg("%04d: %02X\n", i, (int)*(reading_ptr++));
 	}
 
 	return reading_message;

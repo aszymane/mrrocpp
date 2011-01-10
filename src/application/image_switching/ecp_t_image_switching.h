@@ -53,8 +53,8 @@ class ecp_t_image_switching: public common::task::task {
 
 		shared_ptr<visual_servo_regulator> reg;
 		shared_ptr<visual_servo_manager> sm;
-		shared_ptr<visual_servo> vs1;
-		shared_ptr<visual_servo> vs2;
+		shared_ptr<visual_servo> eih;
+		shared_ptr<visual_servo> sac;
 		shared_ptr<termination_condition> term_cond;
 
 	public:

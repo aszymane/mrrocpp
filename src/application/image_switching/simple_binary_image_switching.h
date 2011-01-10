@@ -33,8 +33,8 @@ public:
 					mrrocpp::ecp::servovision::visual_servo> vs2);
 	virtual ~simple_binary_image_switching();
 protected:
-	virtual lib::Homog_matrix get_aggregated_position_change();
-	virtual void configure_all_servos();
+	lib::Homog_matrix get_aggregated_position_change();
+	void configure_all_servos();
 	int state;
 };
 

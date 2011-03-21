@@ -2,6 +2,7 @@ add_executable(image_switching
 	ecp_t_image_switching.cc
 #	ecp_g_image_switching.cc
 	simple_binary_image_switching.cc
+	aggregated_image_switching.cc
 	../servovision/visual_servo_manager.cc
     ../servovision/single_visual_servo_manager.cc
 	../servovision/ib_eih_visual_servo.cc
@@ -17,7 +18,7 @@ add_executable(image_switching
 )
 
 target_link_libraries(image_switching 
-	ecp_r_irp6ot_m
+	ecp_r_irp6p_m
 	ecp ${COMMON_LIBRARIES}
 )
 

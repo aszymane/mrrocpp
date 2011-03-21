@@ -8,16 +8,17 @@
 #ifndef ECP_T_IMAGE_SWITCHING_H_
 #define ECP_T_IMAGE_SWITCHING_H_
 
+
 #include "base/ecp/ecp_task.h"
 #include <boost/shared_ptr.hpp>
 #include "generator/ecp/ecp_g_newsmooth.h"
-#include "robot/irp6ot_m/ecp_r_irp6ot_m.h"
 //#include "base/ecp/ecp_g_smooth.h"
 //#include "src/application/servovision/visual_servo_manager.h"
 //#include "../servovision/visual_servo_manager.h"
 //#include "ecp_g_image_switching_old.h"
 //#include "ecp_g_image_switching.h"
 #include "simple_binary_image_switching.h"
+#include "aggregated_image_switching.h"
 
 
 #include "../servovision/single_visual_servo_manager.h"
@@ -31,11 +32,10 @@
 using mrrocpp::ecp::common::generator::single_visual_servo_manager;
 using mrrocpp::ecp::common::generator::visual_servo_manager;
 using namespace mrrocpp::ecp::servovision;
-using boost::shared_ptr;
 
 namespace mrrocpp {
 namespace ecp {
-namespace irp6ot {
+namespace irp6p {
 namespace task {
 
 class ecp_t_image_switching: public common::task::task {
@@ -51,11 +51,12 @@ class ecp_t_image_switching: public common::task::task {
 
 //	  static const double initialPositionJoints[MAX_SERVOS_NR];
 
-		shared_ptr<visual_servo_regulator> reg;
-		shared_ptr<visual_servo_manager> sm;
-		shared_ptr<visual_servo> eih;
-		shared_ptr<visual_servo> sac;
-		shared_ptr<termination_condition> term_cond;
+		boost::shared_ptr<visual_servo_regulator> reg;
+		boost::shared_ptr<visual_servo_manager> sm;
+		boost::shared_ptr<visual_servo_manager> sm2;
+		boost::shared_ptr<visual_servo> eih;
+		boost::shared_ptr<visual_servo> sac;
+		boost::shared_ptr<termination_condition> term_cond;
 
 	public:
 	  ecp_t_image_switching(lib::configurator &_config);
@@ -64,7 +65,7 @@ class ecp_t_image_switching: public common::task::task {
 };
 
 }
-} // namespace irp6ot
+} // namespace irp6p
 } // namespace ecp
 } // namespace mrrocpp
 

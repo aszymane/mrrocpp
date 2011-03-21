@@ -11,16 +11,20 @@
 #include <iostream>
 
 //#include "ecp/irp6_on_track/ecp_r_irp6ot.h"
+
 #include "ecp_t_image_switching.h"
 #include "../servovision/ecp_mp_g_visual_servo_tester.h"
 #include "../servovision/defines.h"
+
+#include "robot/irp6p_m/ecp_r_irp6p_m.h"
+
 
 using namespace mrrocpp::ecp::common::generator;
 using namespace logger;
 
 namespace mrrocpp {
 namespace ecp {
-namespace irp6ot {
+namespace irp6p {
 namespace task {
 
 //const double
@@ -31,32 +35,39 @@ ecp_t_image_switching::ecp_t_image_switching(lib::configurator &_config) :
 	task(_config) {
 	logger::log_enabled = true;
 	logger::log_dbg_enabled = true;
-	ecp_m_robot = new ecp::irp6ot_m::robot(*this);
+	ecp_m_robot = new mrrocpp::ecp::irp6p_m::robot(*this);
 
 
-	smooth_gen = new common::generator::newsmooth(*this, lib::ECP_XYZ_ANGLE_AXIS, 6);
+//	smooth_gen = new common::generator::newsmooth(*this, lib::ECP_XYZ_ANGLE_AXIS, 6);
 	sr_ecp_msg->message("ECP loaded ecp_g_image_switching");
 
+//	char config_section_name1[] = { "[object_follower_sac_1]" };
+//	char config_section_name2[] = { "[object_follower_pb]" };
 	char config_section_name1[] = { "[object_follower_pb]" };
 	char config_section_name2[] = { "[object_follower_sac_1]" };
 
-	shared_ptr<position_constraint> cube(new cubic_constraint(config, config_section_name1));
+	boost::shared_ptr<position_constraint> cube(new cubic_constraint(config, config_section_name1));
 
 	//		log_dbg("ecp_t_objectfollower_ib::ecp_t_objectfollower_ib(): 1\n");
-	reg = shared_ptr<visual_servo_regulator> (new regulator_p(config, config_section_name1));
+	reg = boost::shared_ptr<visual_servo_regulator> (new regulator_p(config, config_section_name1));
 	//		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 2\n");
-	eih = shared_ptr<visual_servo> (new pb_eih_visual_servo(reg, config_section_name1, config));
-	sac = shared_ptr<visual_servo> (new pb_sac_visual_servo(reg, config_section_name2, config));
+//	sac = boost::shared_ptr<visual_servo> (new pb_eih_visual_servo(reg, config_section_name1, config));
+//	eih = boost::shared_ptr<visual_servo> (new pb_sac_visual_servo(reg, config_section_name2, config));
+	eih = boost::shared_ptr<visual_servo> (new pb_eih_visual_servo(reg, config_section_name1, config));
+	sac = boost::shared_ptr<visual_servo> (new pb_sac_visual_servo(reg, config_section_name2, config));
 
-//	term_cond = shared_ptr<termination_condition> (
+//	term_cond = boost::shared_ptr<termination_condition> (
 //			new object_reached_termination_condition(config, config_section_name1));
 	//		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 3\n");
-	sm = shared_ptr<visual_servo_manager> (new simple_binary_image_switching( *this,
+//	sm = boost::shared_ptr<visual_servo_manager> (new single_visual_servo_manager( *this, config_section_name2, sac));
+	sm = boost::shared_ptr<visual_servo_manager> (new simple_binary_image_switching( *this,
 			config_section_name1, eih, config_section_name2, sac));
+//	sm = boost::shared_ptr<visual_servo_manager> (new aggregated_image_switching( *this, config_section_name1, eih, config_section_name2, sac));
 	//		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 4\n");
 //	sm->add_position_constraint(cube);
 //	sm->add_termination_condition(term_cond);
 	//		log_dbg("ecp_t_objectfollower_pb::ecp_t_objectfollower_pb(): 5\n");
+//	sm->configure();
 	sm->configure();
 
 }
@@ -93,13 +104,13 @@ void ecp_t_image_switching::main_task_algorithm(void) {
 ;
 
 }
-} // namespace irp6ot
+} // namespace irp6p
 
 namespace common {
 namespace task {
 
 task* return_created_ecp_task(lib::configurator &_config) {
-	return new irp6ot::task::ecp_t_image_switching(_config);
+	return new irp6p::task::ecp_t_image_switching(_config);
 }
 
 }

@@ -21,9 +21,9 @@
 #include "base/lib/com_buf.h"
 #include "base/lib/sr/srlib.h"
 
-#if defined(USE_MESSIP_SRR)
+
 #include "base/lib/messip/messip_dataport.h"
-#endif
+
 
 enum UI_NOTIFICATION_STATE_ENUM
 {
@@ -31,19 +31,13 @@ enum UI_NOTIFICATION_STATE_ENUM
 };
 
 // FIXME: moved from proto.h for linux compatibility
-int set_ui_state_notification(UI_NOTIFICATION_STATE_ENUM new_notifacion);
+
 
 namespace mrrocpp {
 namespace ui {
 namespace common {
 
-#if !defined(USE_MESSIP_SRR)
-typedef int fd_t;
-static const fd_t invalid_fd = -1;
-#else
-typedef messip_channel_t * fd_t;
-static const fd_t invalid_fd = NULL;
-#endif
+class Interface;
 
 enum TEACHING_STATE
 {
@@ -73,14 +67,14 @@ catch (ecp::common::robot::ECP_error & er) { \
 			interface.all_ecp_msg->message (lib::NON_FATAL_ERROR, er.error_no); \
 		break; \
 		default: \
-			interface.all_ecp_msg->message (lib::NON_FATAL_ERROR, 0, "ecp: Unidentified exception"); \
+			interface.all_ecp_msg->message (lib::NON_FATAL_ERROR, "ecp: Unidentified exception"); \
 			perror("Unidentified exception"); \
 		} /* end: switch */ \
 	} \
 } /* end: catch */ \
 \
 catch(const std::exception & e){\
-	std::string tmp_string(" The following error has been detected: ");\
+	std::string tmp_string("The following error has been detected: ");\
 	tmp_string += e.what(); \
 	interface.all_ecp_msg->message (lib::NON_FATAL_ERROR, tmp_string.c_str());\
    std::cerr<<"UI: The following error has been detected :\n\t"<<e.what()<<std::endl;\
@@ -145,7 +139,7 @@ typedef struct _edp_state_def
 	std::string hardware_busy_attach_point; // do sprawdzenie czy edp juz nie istnieje o ile nie jest tryb testowy
 	std::string network_reader_attach_point;
 	int node_nr;
-	fd_t reader_fd;
+	lib::fd_client_t reader_fd;
 	bool is_synchronised;
 	//! TODO: change from int to EDP_STATE enum
 	int state; // -1, edp nie aktywne, 0 - edp wylaczone 1- wlaczone czeka na reader start 2 - wlaczone czeka na reader stop
@@ -165,7 +159,7 @@ typedef struct
 	std::string section_name; // nazwa sekcji, w ktorej zapisana jest konfiguracja
 	std::string network_trigger_attach_point;
 	int node_nr;
-	fd_t trigger_fd;
+	lib::fd_client_t trigger_fd;
 	int state;
 	int last_state;
 } ecp_state_def;
@@ -183,7 +177,7 @@ typedef struct
 	std::string node_name;
 	std::string network_pulse_attach_point;
 	int node_nr;
-	fd_t pulse_fd;
+	lib::fd_client_t pulse_fd;
 	UI_MP_STATE state;
 	UI_MP_STATE last_state;
 } mp_state_def;
@@ -198,10 +192,10 @@ class function_execution_buffer
 {
 public:
 	typedef boost::function <int()> command_function_t;
-
+	Interface& interface;
 	int wait_and_execute();
 	void command(command_function_t _com_fun);
-	function_execution_buffer();
+	function_execution_buffer(Interface& _interface);
 private:
 	boost::condition_variable cond; //! active command condition
 	boost::mutex mtx; //! mutex related to condition variable
@@ -269,9 +263,6 @@ public:
 }
 }
 }
-
-// TODO: reimplement this as a singleton
-extern ui::common::busy_flag communication_flag;
 
 #endif
 

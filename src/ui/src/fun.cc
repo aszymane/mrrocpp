@@ -19,14 +19,15 @@
 #include <process.h>
 #include <cassert>
 
+#include <boost/foreach.hpp>
+
 #include "base/lib/sr/srlib.h"
 #include "ui/src/ui_class.h"
 #include "ui/src/ui_ecp.h"
 
 // #include "ui/src/ui.h"
-// Konfigurator (dla PROCESS_SPAWN_RSH)
+
 #include "base/lib/configurator.h"
-#include "robot/irp6m/const_irp6m.h"
 #include "robot/irp6ot_m/const_irp6ot_m.h"
 #include "robot/irp6ot_tfg/const_irp6ot_tfg.h"
 #include "robot/irp6p_m/const_irp6p_m.h"
@@ -36,7 +37,6 @@
 #include "robot/smb/const_smb.h"
 #include "robot/spkm/const_spkm.h"
 #include "robot/shead/const_shead.h"
-#include "robot/speaker/const_speaker.h"
 #include "robot/conveyor/const_conveyor.h"
 #include "robot/bird_hand/const_bird_hand.h"
 
@@ -54,7 +54,7 @@ int set_ui_busy_state_notification(PtWidget_t *widget, ApInfo_t *apinfo, PtCallb
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	set_ui_state_notification(UI_N_BUSY);
+	interface.set_ui_state_notification(UI_N_BUSY);
 
 	return (Pt_CONTINUE);
 }
@@ -65,62 +65,9 @@ int set_ui_ready_state_notification(PtWidget_t *widget, ApInfo_t *apinfo, PtCall
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	set_ui_state_notification(UI_N_READY);
+	interface.set_ui_state_notification(UI_N_READY);
 
 	return (Pt_CONTINUE);
-}
-
-int set_ui_state_notification(UI_NOTIFICATION_STATE_ENUM new_notifacion)
-{
-	if (new_notifacion != interface.notification_state) {
-		int pt_res = PtEnter(0);
-
-		interface.notification_state = new_notifacion;
-
-		switch (new_notifacion)
-		{
-			case UI_N_STARTING:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "STARTING", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_MAGENTA, 0);
-				break;
-			case UI_N_READY:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "READY", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_BLUE, 0);
-				break;
-			case UI_N_BUSY:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "BUSY", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
-				break;
-			case UI_N_EXITING:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "EXITING", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_MAGENTA, 0);
-				break;
-			case UI_N_COMMUNICATION:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "COMMUNICATION", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
-				break;
-			case UI_N_SYNCHRONISATION:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "SYNCHRONISATION", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
-				break;
-			case UI_N_PROCESS_CREATION:
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "PROCESS CREATION", 0);
-				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
-				break;
-		}
-
-		PtDamageWidget(ABW_PtLabel_ready_busy);
-		PtFlush();
-
-		if (pt_res >= 0)
-			PtLeave(0);
-
-		return 1;
-
-	}
-
-	return 0;
-
 }
 
 // zamyka okno proces control
@@ -447,8 +394,6 @@ int init_teaching_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t 
 			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6p_m::ROBOT_NAME) {
 
 				start_wnd_irp6_postument_xyz_angle_axis(widget, apinfo, cbinfo);
-			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6m::ROBOT_NAME) {
-				start_wnd_irp6m_xyz_angle_axis(widget, apinfo, cbinfo);
 			}
 			break;
 		case lib::C_XYZ_EULER_ZYZ:
@@ -457,8 +402,6 @@ int init_teaching_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t 
 				start_wnd_irp6_on_track_xyz_euler_zyz(widget, apinfo, cbinfo);
 			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6p_m::ROBOT_NAME) {
 				start_wnd_irp6_postument_xyz_euler_zyz(widget, apinfo, cbinfo);
-			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6m::ROBOT_NAME) {
-				start_wnd_irp6m_xyz_euler_zyz(widget, apinfo, cbinfo);
 			}
 
 			break;
@@ -467,8 +410,6 @@ int init_teaching_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t 
 				start_wnd_irp6_on_track_int(widget, apinfo, cbinfo);
 			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6p_m::ROBOT_NAME) {
 				start_wnd_irp6_postument_int(widget, apinfo, cbinfo);
-			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6m::ROBOT_NAME) {
-				start_wnd_irp6m_int(widget, apinfo, cbinfo);
 			}
 
 			break;
@@ -477,8 +418,6 @@ int init_teaching_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t 
 				start_wnd_irp6_on_track_inc(widget, apinfo, cbinfo);
 			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6p_m::ROBOT_NAME) {
 				start_wnd_irp6_postument_inc(widget, apinfo, cbinfo);
-			} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6m::ROBOT_NAME) {
-				start_wnd_irp6m_inc(widget, apinfo, cbinfo);
 			}
 
 			break;
@@ -606,7 +545,7 @@ int file_selection_window_post_realize(PtWidget_t *widget, ApInfo_t *apinfo, PtC
 			PtDamageWidget(ABW_PtFileSel_sl);
 
 			// zaznaczenie jednego z elementow
-			item_list = PtFSAllItems(ABW_PtFileSel_sl, NULL );
+			item_list = PtFSAllItems(ABW_PtFileSel_sl, NULL);
 			item = *item_list;
 			PtFSSelect(ABW_PtFileSel_sl, item);
 			break;
@@ -630,7 +569,7 @@ int file_selection_window_post_realize(PtWidget_t *widget, ApInfo_t *apinfo, PtC
 				strcat(current_path, p);
 				// 	     printf( "word: %s\n", current_path );
 
-				item_list = PtFSAllItems(ABW_PtFileSel_sl, NULL );
+				item_list = PtFSAllItems(ABW_PtFileSel_sl, NULL);
 				for (; !(((*item_list) == NULL) || (wyjscie)); item_list++) {
 					item = *item_list;
 					if (strcmp(item->fullpath, current_path) == 0)
@@ -639,7 +578,7 @@ int file_selection_window_post_realize(PtWidget_t *widget, ApInfo_t *apinfo, PtC
 				}
 				if (wyjscie) {
 					PtFSSelect(ABW_PtFileSel_sl, item);
-					PtFSFolderExpand(ABW_PtFileSel_sl, item, NULL );
+					PtFSFolderExpand(ABW_PtFileSel_sl, item, NULL);
 					PtFSGoto(ABW_PtFileSel_sl, item);
 					PtFSDamageItem(ABW_PtFileSel_sl, item);
 				}
@@ -670,6 +609,7 @@ int close_base_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cb
 
 }
 
+// Moved to qt Mainwindow
 int quit(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -740,7 +680,6 @@ int process_control_window_init(PtWidget_t *widget, ApInfo_t *apinfo, PtCallback
 
 		// Dla irp6_mechatronika
 
-		interface.irp6m_m->process_control_window_irp6m_section_init(wlacz_PtButton_wnd_processes_control_all_reader_start, wlacz_PtButton_wnd_processes_control_all_reader_stop, wlacz_PtButton_wnd_processes_control_all_reader_trigger);
 
 		// All reader's pulse buttons
 		if (wlacz_PtButton_wnd_processes_control_all_reader_start) {
@@ -761,6 +700,7 @@ int process_control_window_init(PtWidget_t *widget, ApInfo_t *apinfo, PtCallback
 
 			switch (interface.mp.state)
 			{
+				case ui::common::UI_MP_NOT_PERMITED_TO_RUN:
 				case ui::common::UI_MP_PERMITED_TO_RUN:
 					interface.block_widget(ABW_PtButton_wnd_processes_control_mp_pulse_start);
 					interface.block_widget(ABW_PtButton_wnd_processes_control_mp_pulse_stop);
@@ -828,12 +768,7 @@ int block_all_ecp_trigger_widgets(PtWidget_t *widget, ApInfo_t *apinfo, PtCallba
 	if (interface.conveyor->state.edp.is_synchronised) {
 		interface.block_widget(ABW_PtButton_wnd_processes_control_conveyor_ecp_trigger);
 	}
-	if (interface.speaker->state.edp.is_synchronised) {
-		interface.block_widget(ABW_PtButton_wnd_processes_control_speaker_ecp_trigger);
-	}
-	if (interface.irp6m_m->state.edp.is_synchronised) {
-		interface.block_widget(ABW_PtButton_wnd_processes_control_irp6m_ecp_trigger);
-	}
+
 	interface.block_widget(ABW_PtButton_wnd_processes_control_all_ecp_trigger);
 
 	return (Pt_CONTINUE);
@@ -855,12 +790,7 @@ int unblock_all_ecp_trigger_widgets(PtWidget_t *widget, ApInfo_t *apinfo, PtCall
 	if (interface.conveyor->state.edp.is_synchronised) {
 		interface.unblock_widget(ABW_PtButton_wnd_processes_control_conveyor_ecp_trigger);
 	}
-	if (interface.speaker->state.edp.is_synchronised) {
-		interface.unblock_widget(ABW_PtButton_wnd_processes_control_speaker_ecp_trigger);
-	}
-	if (interface.irp6m_m->state.edp.is_synchronised) {
-		interface.unblock_widget(ABW_PtButton_wnd_processes_control_irp6m_ecp_trigger);
-	}
+
 	interface.unblock_widget(ABW_PtButton_wnd_processes_control_all_ecp_trigger);
 
 	return (Pt_CONTINUE);
@@ -935,6 +865,7 @@ int start_file_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cb
 	return (Pt_CONTINUE);
 }
 
+// moved to ui-qt interface
 int clear_console(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 {
 
@@ -959,6 +890,7 @@ int clear_console(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo
 
 }
 
+// moved to ui-qt interface
 // zatrzymuje zadanie, zabija procesy
 int unload_all(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
@@ -976,6 +908,7 @@ int unload_all(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 }
 
+// moved to ui-qt interface
 // najpierw unload_all zabija wszystkie procesy wzmiankowane w pliku konfiguracyjnym
 
 int slay_all(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
@@ -994,7 +927,7 @@ int slay_all(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 			interface.program_node_list.begin(); program_node_list_iterator != interface.program_node_list.end(); program_node_list_iterator++) {
 		char system_command[100];
 		/*
-		 #if 0 && defined(PROCESS_SPAWN_RSH)
+		 #if 0
 		 sprintf(system_command, "rsh %s killall -e -q -v %s",
 		 program_node_list_iterator->node_name,
 		 program_node_list_iterator->program_name
@@ -1010,7 +943,7 @@ int slay_all(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 		 */
 		delay(10);
 
-#if 0 && defined(PROCESS_SPAWN_RSH)
+#if 0
 		sprintf(system_command, "rsh %s killall -e -q -v %s",
 				program_node_list_iterator->node_name.c_str(),
 				program_node_list_iterator->program_name.c_str()
@@ -1198,6 +1131,7 @@ int close_choose_option_window(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackI
 
 }
 
+// moved to ui-qt interface
 int EDP_all_robots_synchronise(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1205,13 +1139,10 @@ int EDP_all_robots_synchronise(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackI
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	EDP_conveyor_synchronise(widget, apinfo, cbinfo);
-	EDP_irp6_on_track_synchronise(widget, apinfo, cbinfo);
-	EDP_irp6ot_tfg_synchronise(widget, apinfo, cbinfo);
-	EDP_irp6p_tfg_synchronise(widget, apinfo, cbinfo);
-	EDP_sarkofag_synchronise(widget, apinfo, cbinfo);
-	EDP_irp6_postument_synchronise(widget, apinfo, cbinfo);
-	EDP_irp6_mechatronika_synchronise(widget, apinfo, cbinfo);
+	BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+				{
+					robot_node.second->synchronise();
+				}
 
 	return (Pt_CONTINUE);
 
@@ -1229,13 +1160,10 @@ int teaching_window_send_move(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackIn
 
 	if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6ot_m::ROBOT_NAME) {
 		for (int i = 0; i < lib::irp6ot_m::NUM_OF_SERVOS; i++)
-			interface.ui_ecp_obj->ui_rep.coordinates[i] = interface.irp6ot_m->irp6ot_current_pos[i];
+			interface.ui_ecp_obj->ui_rep.coordinates[i] = interface.irp6ot_m->current_pos[i];
 	} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6p_m::ROBOT_NAME) {
 		for (int i = 0; i < lib::irp6p_m::NUM_OF_SERVOS; i++)
-			interface.ui_ecp_obj->ui_rep.coordinates[i] = interface.irp6p_m->irp6p_current_pos[i];
-	} else if (interface.ui_ecp_obj->ecp_to_ui_msg.robot_name == lib::irp6m::ROBOT_NAME) {
-		for (int i = 0; i < lib::irp6m::NUM_OF_SERVOS; i++)
-			interface.ui_ecp_obj->ui_rep.coordinates[i] = interface.irp6m_m->irp6m_current_pos[i];
+			interface.ui_ecp_obj->ui_rep.coordinates[i] = interface.irp6p_m->current_pos[i];
 	}
 
 	interface.ui_ecp_obj->ui_rep.double_number = *motion_time;
@@ -1246,37 +1174,7 @@ int teaching_window_send_move(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackIn
 	return (Pt_CONTINUE);
 }
 
-int all_robots_move_to_preset_position(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
-
-{
-
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
-
-	// jesli MP nie pracuje (choc moze byc wlaczone)
-	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
-			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
-		// ruch do pozcyji synchronizacji dla Irp6_on_track i dla dalszych analogicznie
-		if (interface.irp6ot_m->check_synchronised_and_loaded())
-			irp6ot_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.irp6ot_tfg->check_synchronised_and_loaded())
-			irp6ot_tfg_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.irp6p_m->check_synchronised_and_loaded())
-			irp6p_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.irp6p_tfg->check_synchronised_and_loaded())
-			irp6p_tfg_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.sarkofag->check_synchronised_and_loaded())
-			sarkofag_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.conveyor->check_synchronised_and_loaded())
-			conveyor_move_to_preset_position(widget, apinfo, cbinfo);
-		if (interface.irp6m_m->check_synchronised_and_loaded())
-			irp6m_move_to_preset_position(widget, apinfo, cbinfo);
-	}
-
-	return (Pt_CONTINUE);
-
-}
-
+// moved to ui-qt interface
 int EDP_all_robots_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1284,46 +1182,33 @@ int EDP_all_robots_create(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	EDP_irp6_on_track_create(widget, apinfo, cbinfo);
-	EDP_irp6ot_tfg_create(widget, apinfo, cbinfo);
-	EDP_irp6_postument_create(widget, apinfo, cbinfo);
-	EDP_irp6p_tfg_create(widget, apinfo, cbinfo);
-	EDP_sarkofag_create(widget, apinfo, cbinfo);
-	EDP_conveyor_create(widget, apinfo, cbinfo);
-	EDP_bird_hand_create(widget, apinfo, cbinfo);
-	EDP_spkm_create(widget, apinfo, cbinfo);
-	EDP_smb_create(widget, apinfo, cbinfo);
-	EDP_shead_create(widget, apinfo, cbinfo);
-	EDP_speaker_create(widget, apinfo, cbinfo);
-	EDP_irp6_mechatronika_create(widget, apinfo, cbinfo);
+	BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+				{
+					robot_node.second->edp_create();
+				}
 
 	return (Pt_CONTINUE);
 
 }
 
+// moved to ui-qt interface
 int EDP_all_robots_slay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
 
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
-	EDP_irp6_on_track_slay(widget, apinfo, cbinfo);
-	EDP_irp6ot_tfg_slay(widget, apinfo, cbinfo);
-	EDP_irp6_postument_slay(widget, apinfo, cbinfo);
-	EDP_irp6p_tfg_slay(widget, apinfo, cbinfo);
-	EDP_sarkofag_slay(widget, apinfo, cbinfo);
-	EDP_conveyor_slay(widget, apinfo, cbinfo);
-	EDP_bird_hand_slay(widget, apinfo, cbinfo);
-	EDP_spkm_slay(widget, apinfo, cbinfo);
-	EDP_smb_slay(widget, apinfo, cbinfo);
-	EDP_shead_slay(widget, apinfo, cbinfo);
-	EDP_speaker_slay(widget, apinfo, cbinfo);
-	EDP_irp6_mechatronika_slay(widget, apinfo, cbinfo);
+
+	BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+				{
+					robot_node.second->EDP_slay_int();
+				}
 
 	return (Pt_CONTINUE);
 
 }
 
+// moved to ui-qt interface
 int MPup(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1331,69 +1216,13 @@ int MPup(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 	/* eliminate 'unreferenced' warnings */
 	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
 
-	interface.main_eb.command(boost::bind(MPup_int, widget, apinfo, cbinfo));
+	interface.main_eb->command(boost::bind(&ui::common::Interface::MPup_int, &interface));
 
 	return (Pt_CONTINUE);
 
 }
 
-int MPup_int(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
-
-{
-
-	/* eliminate 'unreferenced' warnings */
-	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
-	int pt_res;
-	set_ui_state_notification(UI_N_PROCESS_CREATION);
-
-	if (interface.mp.pid == -1) {
-
-		interface.mp.node_nr = interface.config->return_node_number(interface.mp.node_name.c_str());
-
-		std::string mp_network_pulse_attach_point("/dev/name/global/");
-		mp_network_pulse_attach_point += interface.mp.network_pulse_attach_point;
-
-		// sprawdzenie czy nie jest juz zarejestrowany serwer komunikacyjny MP
-		if (access(mp_network_pulse_attach_point.c_str(), R_OK) == 0) {
-			interface.ui_msg->message(lib::NON_FATAL_ERROR, "mp already exists");
-		} else if (interface.check_node_existence(interface.mp.node_name, "mp")) {
-			interface.mp.pid = interface.config->process_spawn(lib::MP_SECTION);
-
-			if (interface.mp.pid > 0) {
-
-				short tmp = 0;
-				// kilka sekund  (~1) na otworzenie urzadzenia
-				while ((interface.mp.pulse_fd =
-#if !defined(USE_MESSIP_SRR)
-						name_open(interface.mp.network_pulse_attach_point.c_str(), NAME_FLAG_ATTACH_GLOBAL)) < 0
-#else
-					messip::port_connect(interface.mp.network_pulse_attach_point)) == NULL
-#endif
-					)
-					if ((tmp++) < lib::CONNECT_RETRY)
-						delay(lib::CONNECT_DELAY);
-					else {
-						fprintf(stderr, "name_open() for %s failed: %s\n", interface.mp.network_pulse_attach_point.c_str(), strerror(errno));
-						break;
-					}
-
-				interface.teachingstate = ui::common::MP_RUNNING;
-
-				interface.mp.state = ui::common::UI_MP_WAITING_FOR_START_PULSE; // mp wlaczone
-				pt_res = PtEnter(0);
-				start_process_control_window(widget, apinfo, cbinfo);
-				if (pt_res >= 0)
-					PtLeave(0);
-			} else {
-				fprintf(stderr, "mp spawn failed\n");
-			}
-			interface.manage_interface();
-		}
-	}
-
-	return 1;
-}
-
+// moved to ui-qt interface
 int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1409,11 +1238,7 @@ int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 			pulse_stop_mp(widget, apinfo, cbinfo);
 		}
 
-#if !defined(USE_MESSIP_SRR)
-		name_close(interface.mp.pulse_fd);
-#else
 		messip::port_disconnect(interface.mp.pulse_fd);
-#endif
 
 		// 	printf("dddd: %d\n", SignalKill(ini_con->mp-
 		// 	printf("mp slay\n");
@@ -1425,13 +1250,11 @@ int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 	// 	kill(interface.mp_pid,SIGTERM);
 	// 	printf("mp pupa po kill\n");
 	interface.mp.pid = -1;
-	interface.mp.pulse_fd = ui::common::invalid_fd;
+	interface.mp.pulse_fd = lib::invalid_fd;
 
 	interface.irp6ot_m->deactivate_ecp_trigger();
 	interface.irp6p_m->deactivate_ecp_trigger();
 	interface.conveyor->deactivate_ecp_trigger();
-	interface.speaker->deactivate_ecp_trigger();
-	interface.irp6m_m->deactivate_ecp_trigger();
 
 	// modyfikacja menu
 	interface.manage_interface();
@@ -1440,6 +1263,7 @@ int MPslay(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 }
 
+// moved to ui-qt interface
 int pulse_start_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1451,17 +1275,12 @@ int pulse_start_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinf
 
 		interface.mp.state = ui::common::UI_MP_TASK_RUNNING;// czekanie na stop
 
-		// zamkniecie okien ruchow recznych o ile sa otwarte
+		// close_all_windows
 
-		interface.irp6ot_m->close_all_windows();
-		interface.irp6p_m->close_all_windows();
-		interface.irp6m_m->close_all_windows();
-		interface.bird_hand->close_all_windows();
-		interface.conveyor->close_all_windows();
-		interface.irp6ot_tfg->close_all_windows();
-		interface.irp6p_tfg->close_all_windows();
-		interface.sarkofag->close_all_windows();
-		interface.speaker->close_all_windows();
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						robot_node.second->close_all_windows();
+					}
 
 		interface.execute_mp_pulse(MP_START);
 
@@ -1474,6 +1293,7 @@ int pulse_start_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinf
 
 }
 
+// moved to ui-qt interface
 int pulse_stop_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1496,6 +1316,7 @@ int pulse_stop_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo
 
 }
 
+// moved to ui-qt interface
 int pulse_pause_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1518,6 +1339,7 @@ int pulse_pause_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinf
 
 }
 
+// moved to ui-qt interface
 int pulse_resume_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1540,6 +1362,7 @@ int pulse_resume_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbin
 
 }
 
+// moved to ui-qt interface
 int pulse_trigger_mp(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 {
@@ -1635,7 +1458,6 @@ int pulse_reader_all_robots_start(PtWidget_t *widget, ApInfo_t *apinfo, PtCallba
 	interface.irp6ot_m->pulse_reader_start_exec_pulse();
 	interface.irp6p_m->pulse_reader_start_exec_pulse();
 	interface.conveyor->pulse_reader_start_exec_pulse();
-	interface.irp6m_m->pulse_reader_start_exec_pulse();
 
 	process_control_window_init(widget, apinfo, cbinfo);
 
@@ -1653,7 +1475,6 @@ int pulse_reader_all_robots_stop(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbac
 	interface.irp6ot_m->pulse_reader_stop_exec_pulse();
 	interface.irp6p_m->pulse_reader_stop_exec_pulse();
 	interface.conveyor->pulse_reader_stop_exec_pulse();
-	interface.irp6m_m->pulse_reader_stop_exec_pulse();
 	process_control_window_init(widget, apinfo, cbinfo);
 
 	return (Pt_CONTINUE);
@@ -1670,7 +1491,6 @@ int pulse_reader_all_robots_trigger(PtWidget_t *widget, ApInfo_t *apinfo, PtCall
 	interface.irp6ot_m->pulse_reader_trigger_exec_pulse();
 	interface.irp6p_m->pulse_reader_trigger_exec_pulse();
 	interface.conveyor->pulse_reader_trigger_exec_pulse();
-	interface.irp6m_m->pulse_reader_trigger_exec_pulse();
 
 	return (Pt_CONTINUE);
 
@@ -1686,9 +1506,129 @@ int pulse_ecp_all_robots(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t 
 	pulse_ecp_irp6_on_track(widget, apinfo, cbinfo);
 	pulse_ecp_irp6_postument(widget, apinfo, cbinfo);
 	pulse_ecp_conveyor(widget, apinfo, cbinfo);
-	pulse_ecp_speaker(widget, apinfo, cbinfo);
-	pulse_ecp_irp6_mechatronika(widget, apinfo, cbinfo);
 
+	return (Pt_CONTINUE);
+
+}
+
+// moved to ui-qt interface
+int all_robots_move_to_synchro_position(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+
+{
+	/* eliminate 'unreferenced' warnings */
+	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+
+	// jesli MP nie pracuje (choc moze byc wlaczone)
+	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
+			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
+
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						if (robot_node.second->check_synchronised_and_loaded()) {
+							robot_node.second->move_to_synchro_position();
+						}
+					}
+
+	}
+
+	return (Pt_CONTINUE);
+
+}
+
+// moved to ui-qt interface
+int all_robots_move_to_preset_position_1(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+
+{
+
+	/* eliminate 'unreferenced' warnings */
+	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+
+	// jesli MP nie pracuje (choc moze byc wlaczone)
+	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
+			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
+
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						if (robot_node.second->check_synchronised_and_loaded()) {
+							robot_node.second->move_to_preset_position(1);
+						}
+					}
+
+	}
+
+	return (Pt_CONTINUE);
+
+}
+
+// moved to ui-qt interface
+int all_robots_move_to_preset_position_2(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+
+{
+
+	/* eliminate 'unreferenced' warnings */
+	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+
+	// jesli MP nie pracuje (choc moze byc wlaczone)
+	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
+			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
+
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						if (robot_node.second->check_synchronised_and_loaded()) {
+							robot_node.second->move_to_preset_position(2);
+						}
+					}
+
+	}
+	return (Pt_CONTINUE);
+
+}
+
+// moved to ui-qt interface
+int all_robots_move_to_preset_position_0(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+
+{
+
+	/* eliminate 'unreferenced' warnings */
+	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+
+	// jesli MP nie pracuje (choc moze byc wlaczone)
+	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
+			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
+
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						if (robot_node.second->check_synchronised_and_loaded()) {
+							robot_node.second->move_to_preset_position(0);
+						}
+					}
+
+	}
+
+	return (Pt_CONTINUE);
+
+}
+
+// moved to ui-qt interface
+int all_robots_move_to_front_position(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
+
+{
+
+	/* eliminate 'unreferenced' warnings */
+	widget = widget, apinfo = apinfo, cbinfo = cbinfo;
+
+	// jesli MP nie pracuje (choc moze byc wlaczone)
+	if ((interface.mp.state == ui::common::UI_MP_NOT_PERMITED_TO_RUN) || (interface.mp.state
+			== ui::common::UI_MP_PERMITED_TO_RUN) || (interface.mp.state == ui::common::UI_MP_WAITING_FOR_START_PULSE)) {
+
+		BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, interface.robot_m)
+					{
+						if (robot_node.second->check_synchronised_and_loaded()) {
+							robot_node.second->move_to_front_position();
+						}
+					}
+
+	}
 	return (Pt_CONTINUE);
 
 }

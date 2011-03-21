@@ -19,13 +19,20 @@
 #include <sys/neutrino.h>
 #endif /* __QNXNTO__ */
 
-// niezbedny naglowek z definiacja PROCESS_SPAWN_RSH
+#include <boost/exception/all.hpp>
+
+#include "config.h"
+
+#if defined(HAVE_MLOCKALL)
+#	include <sys/mman.h>
+#endif /* HAVE_MLOCKALL */
+
 #include "base/lib/configurator.h"
 
 #include "base/lib/typedefs.h"
 #include "base/lib/impconst.h"
 #include "base/lib/com_buf.h"
-#include "base/lib/sr/srlib.h"
+#include "base/lib/sr/sr_edp.h"
 #include "base/edp/edp_effector.h"
 
 namespace mrrocpp {
@@ -45,10 +52,11 @@ void catch_signal(int sig)
 	switch (sig)
 	{
 		case SIGTERM:
+		case SIGHUP:
 #ifdef __QNXNTO__
 			ClockPeriod(CLOCK_REALTIME, &old_cp, NULL, 0);
 #endif /* __QNXNTO__ */
-			master->sh_msg->message("edp terminated");
+			master->msg->message("edp terminated");
 			_exit(EXIT_SUCCESS);
 			break;
 		case SIGSEGV:
@@ -85,31 +93,22 @@ int main(int argc, char *argv[])
 
 		// przechwycenie SIGTERM
 		signal(SIGTERM, &edp::common::catch_signal);
+		signal(SIGHUP, &edp::common::catch_signal);
 		signal(SIGSEGV, &edp::common::catch_signal);
 
 		// avoid transporting Ctrl-C signal from UI console
-#if defined(PROCESS_SPAWN_RSH)
+
 		signal(SIGINT, SIG_IGN);
-#endif
 
 		// create configuration object
-		lib::configurator _config(argv[1], argv[2], argv[3], argv[4], (argc < 6) ? "" : argv[5]);
+		lib::configurator _config(argv[1], argv[2], argv[3]);
 
-		// block test-mode timer signal for all the threads
-		if (_config.value <int> (lib::ROBOT_TEST_MODE)) {
-			/* Block timer signal from test mode timer for all threads */
-			//		    fprintf(stderr, "Blocking signal %d\n", SIGRTMIN);
-			sigset_t mask;
-			if (sigemptyset(&mask) == -1) {
-				perror("sigemptyset()");
-			}
-			if (sigaddset(&mask, SIGRTMIN) == -1) {
-				perror("sigaddset()");
-			}
-			if (sigprocmask(SIG_BLOCK, &mask, NULL)) {
-				perror("sigprocmask()");
-			}
+#if defined(HAVE_MLOCKALL)
+		// Try to lock memory to avoid swapping whlie executing in real-time
+		if(mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+			perror("mlockall()");
 		}
+#endif /* HAVE_MLOCKALL */
 
 		edp::common::master = edp::common::return_created_efector(_config);
 
@@ -125,19 +124,15 @@ int main(int argc, char *argv[])
 		//	printf("end\n");
 	}
 
-	catch (System_error & fe) {
-		// Obsluga bledow systemowych
-		/*
-		 // Wystapil blad w komunikacji miedzyprocesowej, oczekiwanie na jawne
-		 // zabicie procesu przez operatora
-		 for (;;) {
-		 delay(100);
-		 //   printf("\a"); // Sygnal dzwiekowy
-		 }
-		 */
-	} // end: catch(System_error fe)
+	catch (boost::exception & e) {
+		std::cerr << diagnostic_information(e);
+	}
 
-	catch(std::exception & e) {
+	catch (System_error & fe) {
+		std::cerr << "EDP: System_error" << std::endl;
+	}
+
+	catch (std::exception & e) {
 		std::cerr << "EDP: " << e.what() << std::endl;
 	}
 
@@ -145,14 +140,5 @@ int main(int argc, char *argv[])
 		perror("Unidentified error in EDP");
 		// Komunikat o bledzie wysylamy do SR
 		edp::common::master->msg->message(lib::FATAL_ERROR, EDP_UNIDENTIFIED_ERROR);
-		/*
-		 // Wystapil niezidentyfikowany blad, oczekiwanie na jawne zabicie procesu
-		 // przez operatora
-
-		 for (;;) {
-		 delay(100);
-		 // printf("\a"); // Sygnal dzwiekowy
-		 }
-		 */
 	}
 }

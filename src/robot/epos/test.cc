@@ -1,32 +1,66 @@
 #include <iostream>
 #include <boost/exception/get_error_info.hpp>
+#include <boost/array.hpp>
+#include <boost/foreach.hpp>
 #include <sys/time.h>
 
+#include "epos_access_usb.h"
 #include "epos.h"
 
-using namespace mrrocpp::edp;
+using namespace mrrocpp::edp::epos;
 
 int main(int argc, char *argv[])
 {
-	epos e;
+	epos_access_usb gateway;
+
+	boost::array<epos *, 6> axis;
 
 	try {
-		e.openEPOS();
+		gateway.open();
 
-		for (int i = 0; i < 1000; ++i) {
-			struct timeval tv1, tv2;
+		epos node1(gateway, 1);
+		epos node2(gateway, 2);
+		epos node3(gateway, 3);
+		epos node4(gateway, 4);
+		epos node5(gateway, 5);
+		epos node6(gateway, 6);
 
-			gettimeofday(&tv1, NULL);
-			int32_t homepos = 0;// e.readHomePosition();
-			uint16_t sw = e.readSWversion();
-			gettimeofday(&tv2, NULL);
+		axis[0] = &node1;
+		axis[1] = &node2;
+		axis[2] = &node3;
+		axis[3] = &node4;
+		axis[4] = &node5;
+		axis[5] = &node6;
 
-			const double delta = (tv2.tv_sec + tv2.tv_usec / 1e6) - (tv1.tv_sec + tv1.tv_usec / 1e6);
+		BOOST_FOREACH(epos * node, axis) {
 
-			printf("%.6f sec: home %d sw %04x\n", delta, homepos, sw);
+			node->printEPOSstate();
+//			node->SendNMTService(epos::Reset_Node);
+//			usleep(500000);
+//			node->SendNMTService(epos::Start_Remote_Node);
+//			usleep(500000);
+
+			// Check if in a FAULT state
+			if(node->checkEPOSstate() == 11) {
+				UNSIGNED8 errNum = node->readNumberOfErrors();
+				std::cout << "readNumberOfErrors() = " << (int) errNum << std::endl;
+				for(UNSIGNED8 i = 1; i <= errNum; ++i) {
+
+					UNSIGNED32 errCode = node->readErrorHistory(i);
+
+					std::cout << epos::ErrorCodeMessage(errCode) << std::endl;
+				}
+				if (errNum > 0) {
+					node->clearNumberOfErrors();
+				}
+				node->changeEPOSstate(epos::FAULT_RESET);
+			}
+
+			// Change to the operational mode
+			node->reset();
 		}
 
-		e.closeEPOS();
+		gateway.close();
 	} catch (epos_error & error) {
 		std::cerr << "EPOS Error." << std::endl;
 
@@ -38,6 +72,8 @@ int main(int argc, char *argv[])
 
 		if ( int const * errno_value = boost::get_error_info<errno_code>(error) )
 			std::cerr << "Errno value: " << *errno_value << std::endl;
+	} catch (...) {
+		std::cerr << "Unhandled exception" << std::endl;
 	}
 
 	return 0;

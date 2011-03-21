@@ -102,17 +102,8 @@ bool manip_effector::compute_servo_joints_and_frame(void)
 
 /*--------------------------------------------------------------------------*/
 manip_effector::manip_effector(lib::configurator &_config, lib::robot_name_t l_robot_name) :
-	motor_driven_effector(_config, l_robot_name), force_sensor_test_mode(true)
+	motor_driven_effector(_config, l_robot_name)
 {
-
-	if (config.exists(lib::FORCE_SENSOR_TEST_MODE.c_str())) {
-		force_sensor_test_mode = config.value <int> (lib::FORCE_SENSOR_TEST_MODE);
-	}
-
-	if (force_sensor_test_mode) {
-		msg->message("Force sensor test mode activated");
-	}
-
 }
 
 /*--------------------------------------------------------------------------*/
@@ -122,7 +113,7 @@ void manip_effector::set_robot_model_with_sb(const lib::c_buffer &instruction)
 	// uint8_t previous_corrector;
 
 	//printf(" SET ROBOT_MODEL: ");
-	switch (instruction.set_robot_model_type)
+	switch (instruction.robot_model.type)
 	{
 		case lib::SERVO_ALGORITHM:
 			sb->set_robot_model_servo_algorithm(instruction);
@@ -304,7 +295,7 @@ void manip_effector::compute_base_pos_xyz_rot_xyz_vector(const lib::JointArray &
 			}
 			break;
 		case lib::PF_VELOCITY:
-			base_pos_xyz_rot_xyz_vector.set_values(instruction.arm.pf_def.arm_coordinates);
+			base_pos_xyz_rot_xyz_vector = lib::Xyz_Angle_Axis_vector(instruction.arm.pf_def.arm_coordinates);
 			break;
 		default:
 			throw System_error();
@@ -408,7 +399,7 @@ void manip_effector::iterate_macrostep(const lib::JointArray & begining_joints, 
 
 		if (step_counter - last_force_step_counter > PREVIOUS_MOVE_VECTOR_NULL_STEP_VALUE) {
 			//			printf("\n\nPREVIOUS_MOVE_VECTOR_NULL_STEP_VALUE\n\n");
-			previous_move_rot_vector.set_values(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+			previous_move_rot_vector = lib::Xyz_Angle_Axis_vector::Zero();
 		} else {
 			//	printf("\n\nPREVIOUS_MOVE_VECTOR_NULL_STEP_VALUE NOT\n\n");
 		}
@@ -532,7 +523,7 @@ void manip_effector::set_robot_model(const lib::c_buffer &instruction)
 	// uint8_t previous_model;
 	// uint8_t previous_corrector;
 	//printf(" SET ROBOT_MODEL: ");
-	switch (instruction.set_robot_model_type)
+	switch (instruction.robot_model.type)
 	{
 		case lib::FORCE_TOOL:
 			if (vs == NULL) {
@@ -623,7 +614,7 @@ void manip_effector::get_robot_model(lib::c_buffer &instruction)
 			// z wewntrznych struktur danych TRANSFORMATORa
 			// do wewntrznych struktur danych REPLY_BUFFER
 
-			reply.robot_model_type = lib::TOOL_FRAME;
+			reply.robot_model.type = lib::TOOL_FRAME;
 
 			((mrrocpp::kinematics::common::kinematic_model_with_tool*) get_current_kinematic_model())->tool.get_frame_tab(reply.robot_model.tool_frame_def.tool_frame);
 
@@ -681,7 +672,7 @@ void manip_effector::compute_frame(const lib::c_buffer &instruction)
 
 lib::Homog_matrix manip_effector::return_current_frame(TRANSLATION_ENUM translation_mode)
 {// by Y
-	boost::mutex::scoped_lock lock(edp_irp6s_effector_mutex);
+	boost::mutex::scoped_lock lock(effector_mutex);
 	// przepisanie danych na zestaw lokalny dla edp_force
 	// lib::copy_frame(force_current_end_effector_frame, global_current_end_effector_frame);
 	lib::Homog_matrix return_frame(servo_current_frame_wo_tool);

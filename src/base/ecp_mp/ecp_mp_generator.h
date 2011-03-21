@@ -9,10 +9,15 @@
  * @ingroup ecp_mp
  */
 
-#include "base/lib/sr/sr_ecp.h"
 #include "base/ecp_mp/ecp_mp_typedefs.h"
 
+
 namespace mrrocpp {
+
+namespace lib {
+	class sr_ecp;
+}
+
 namespace ecp_mp {
 namespace generator {
 
@@ -33,7 +38,7 @@ protected:
 
 public:
 	/**
-	 * @brief trigger received flad
+	 * @brief trigger received flag
 	 */
 	bool trigger;
 

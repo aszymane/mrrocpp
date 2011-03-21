@@ -6,10 +6,10 @@
  * @ingroup mp
  */
 
+#include <unistd.h>
+
 #include "base/mp/mp_task.h"
 #include "base/mp/generator/mp_g_delay_ms_condition.h"
-
-#include "unistd.h"
 
 namespace mrrocpp {
 namespace mp {
@@ -41,7 +41,7 @@ bool delay_ms_condition::next_step()
 	local_timer.get_time(sec);
 	if (1000 * sec > (float) ms_delay)
 		return false;
-	delay (20);
+	usleep (20*1000);
 	local_timer.stop();
 	local_timer.get_time(sec);
 	if (1000 * sec > (float) ms_delay)

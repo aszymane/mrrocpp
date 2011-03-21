@@ -1,7 +1,5 @@
 add_library(sr
-	SenderBase.cc
-	SimpleSender.cc
-	ThreadedSender.cc
+	Sender.cc
 	sr_ecp.cc
 	sr_edp.cc
 	sr_ui.cc
@@ -9,6 +7,6 @@ add_library(sr
 	srlib.cc
 )
 
-if(USE_MESSIP)
-    target_link_libraries(sr messip)
-endif(USE_MESSIP)
+target_link_libraries(sr messip)
+
+install(TARGETS sr DESTINATION lib)

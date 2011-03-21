@@ -23,12 +23,11 @@
 #include "ui/src/irp6p_m/ui_r_irp6p_m.h"
 #include "ui/src/irp6p_tfg/ui_r_irp6p_tfg.h"
 #include "ui/src/sarkofag/ui_r_sarkofag.h"
-#include "ui/src/irp6m_m/ui_r_irp6m_m.h"
 #include "ui/src/conveyor/ui_r_conveyor.h"
-#include "ui/src/speaker/ui_r_speaker.h"
 #include "ui/src/spkm/ui_r_spkm.h"
 #include "ui/src/shead/ui_r_shead.h"
 #include "ui/src/smb/ui_r_smb.h"
+#include "ui/src/polycrank/ui_r_polycrank.h"
 
 //
 //
@@ -36,13 +35,15 @@
 //
 //
 
-#if defined(USE_MESSIP_SRR)
+
 #include "base/lib/messip/messip_dataport.h"
-#endif
 
 namespace mrrocpp {
 namespace ui {
 namespace common {
+
+typedef std::map <lib::robot_name_t, UiRobot*> robots_t;
+typedef robots_t::value_type robot_pair_t;
 
 class sr_buffer;
 class ecp_buffer;
@@ -56,12 +57,14 @@ private:
 
 public:
 
+	busy_flag communication_flag;
+
 	sr_buffer* ui_sr_obj;
 	ecp_buffer* ui_ecp_obj;
 
 	feb_thread* meb_tid;
 
-	function_execution_buffer main_eb;
+	function_execution_buffer *main_eb;
 
 	typedef std::string list_t;
 
@@ -89,8 +92,8 @@ public:
 
 	boost::mutex process_creation_mtx;
 	lib::configurator* config;
-	lib::sr_ecp* all_ecp_msg; // Wskaznik na obiekt do komunikacji z SR z fukcja ECP dla wszystkich robotow
-	lib::sr_ui* ui_msg; // Wskaznik na obiekt do komunikacji z SR
+	boost::shared_ptr <lib::sr_ecp> all_ecp_msg; // Wskaznik na obiekt do komunikacji z SR z fukcja ECP dla wszystkich robotow
+	boost::shared_ptr <lib::sr_ui> ui_msg; // Wskaznik na obiekt do komunikacji z SR
 
 	mp_state_def mp;
 	// bool is_any_edp_active;
@@ -116,23 +119,32 @@ public:
 	std::string mrrocpp_bin_to_root_path;
 
 	// The Ui robots
+
+	/**
+	 * @brief map of all robots used in the task
+	 */
+	common::robots_t robot_m;
+
 	bird_hand::UiRobot *bird_hand;
+	//robot_m[lib::] = bird_hand;
+
 	irp6ot_m::UiRobot *irp6ot_m;
 	irp6ot_tfg::UiRobot *irp6ot_tfg;
 	irp6p_m::UiRobot *irp6p_m;
 	irp6p_tfg::UiRobot *irp6p_tfg;
 	sarkofag::UiRobot *sarkofag;
-	irp6m::UiRobot *irp6m_m;
 	conveyor::UiRobot *conveyor;
-	speaker::UiRobot *speaker;
 	spkm::UiRobot *spkm;
 	smb::UiRobot *smb;
 	shead::UiRobot *shead;
+	polycrank::UiRobot *polycrank;
 
 	Interface();
+	int set_ui_state_notification(UI_NOTIFICATION_STATE_ENUM new_notifacion);
 	void UI_close(void);
 	void init();
 	int manage_interface(void);
+	int MPup_int();
 	void reload_whole_configuration();
 	void abort_threads();
 	void fill_node_list(void);
@@ -154,6 +166,12 @@ public:
 	void block_widget(PtWidget_t *widget);
 	void unblock_widget(PtWidget_t *widget);
 	void create_threads();
+
+	bool is_any_robot_active();
+	bool are_all_robots_synchronised_or_inactive();
+	bool are_all_robots_loaded_or_inactive();
+	bool is_any_active_robot_loaded();
+
 };
 
 }

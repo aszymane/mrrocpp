@@ -37,13 +37,15 @@
 
 #include "base/lib/datastr.h"
 #include "generator/ecp/ecp_mp_g_newsmooth.h"
+#include "generator/ecp/force/ecp_mp_g_tff_gripper_approach.h"
 #include "cube_face.h"
+#include "CubeState.h"
 
 #include "robot/conveyor/mp_r_conveyor.h"
 #include "robot/irp6ot_m/mp_r_irp6ot_m.h"
 #include "robot/irp6p_m/mp_r_irp6p_m.h"
-#include "robot/irp6m/mp_r_irp6m.h"
-#include "robot/speaker/mp_r_speaker.h"
+
+
 #include "robot/polycrank/mp_r_polycrank.h"
 #include "robot/bird_hand/mp_r_bird_hand.h"
 #include "robot/irp6ot_tfg/mp_r_irp6ot_tfg.h"
@@ -68,8 +70,8 @@ task* return_created_mp_task(lib::configurator &_config)
 void fsautomat::create_robots()
 {
 	ACTIVATE_MP_ROBOT(conveyor);
-	ACTIVATE_MP_ROBOT(speaker);
-	ACTIVATE_MP_ROBOT(irp6m);
+	
+	
 	ACTIVATE_MP_ROBOT(polycrank);
 	ACTIVATE_MP_ROBOT(bird_hand);
 	ACTIVATE_MP_ROBOT(spkm);
@@ -89,26 +91,26 @@ void fsautomat::create_robots()
 
 fsautomat::fsautomat(lib::configurator &_config) :
 	task(_config)
-{
-	/*	int size, conArg;
-	 char *filePath;
-	 char *fileName = config.value<std::string>("xml_file", "[xml_settings]");
-	 xmlNode *cur_node, *child_node;
-	 xmlChar *stateType, *argument;
+{/*
 
-	 size = 1 + strlen(mrrocpp_network_path) + strlen(fileName);
+	 int size;
+	 char *filePath;
+	 std::string fileName;
+	 fileName = config.value<std::string>("xml_file", "[xml_settings]");
+	 xmlNode *cur_node, *child_node;
+	 xmlChar *stateType;
+	 size = 1 + mrrocpp_network_path.length() + fileName.length();
 	 filePath = new char[size];
 
-	 sprintf(filePath, "%s%s", mrrocpp_network_path, fileName);
+	 sprintf(filePath, "%s%s", mrrocpp_network_path.c_str(), fileName.c_str());
 	 // open xml document
 	 xmlDocPtr doc;
 	 doc = xmlParseFile(filePath);
 	 if(doc == NULL)
 	 {
-	 printf("ERROR in ecp initialization: could not parse file: %s\n",fileName);
+	 printf("ERROR in ecp initialization: could not parse file: %s\n",fileName.c_str());
 	 return;
 	 }
-
 	 // XML root
 	 xmlNode *root = NULL;
 	 root = xmlDocGetRootElement(doc);
@@ -136,12 +138,11 @@ fsautomat::fsautomat(lib::configurator &_config) :
 	 {
 	 for(;child_node->children; child_node->children = child_node->children->next)
 	 {
-	 if(child_node->children->type == XML_ELEMENT_NODE &&
-	 !xmlStrcmp(child_node->children->name, (const xmlChar *)"cube_state"))
+	 if(child_node->children->type == XML_ELEMENT_NODE && !xmlStrcmp(child_node->children->name, (const xmlChar *)"cube_state"))
 	 {
 	 //argument = xmlNodeGetContent(child_node->children);
 	 //if(argument && xmlStrcmp(argument, (const xmlChar *)""));
-	 cube_state = new CubeState();
+	 cube_state = new common::CubeState();
 	 //xmlFree(argument);
 	 }
 	 if(child_node->children->type == XML_ELEMENT_NODE &&
@@ -169,7 +170,7 @@ fsautomat::fsautomat(lib::configurator &_config) :
 	 }
 	 xmlFreeDoc(doc);
 	 xmlCleanupParser();
-	 */
+	 //*/
 
 	if (config.value <int> ("vis_servoing")) {
 
@@ -180,10 +181,10 @@ fsautomat::fsautomat(lib::configurator &_config) :
 	{	sensor_item.second->configure_sensor();
 	}
 
-	// dodanie transmitter'a
+	/*// dodanie transmitter'a
 	transmitter_m[ecp_mp::transmitter::TRANSMITTER_RC_WINDOWS]
 			= new ecp_mp::transmitter::rc_windows(ecp_mp::transmitter::TRANSMITTER_RC_WINDOWS, "[transmitter_rc_windows]", *this);
-
+*/
 	cube_state = new common::CubeState();
 }
 
@@ -202,16 +203,17 @@ common::State * fsautomat::createState(xmlNodePtr stateNode)
 	if (stateType) {
 		actState->setType((char*) stateType);
 	}
-
 	// For each child of state: i.e. Robot
 	for (xmlNodePtr child_node = stateNode->children; child_node != NULL; child_node = child_node->next) {
 		if (child_node->type == XML_ELEMENT_NODE) {
-			if (!xmlStrcmp(child_node->name, (const xmlChar *) "base/ecpGeneratorType")) {
+			if (!xmlStrcmp(child_node->name, (const xmlChar *) "ECPGeneratorType")) {
+
 				xmlChar * ecpGeneratorType = xmlNodeGetContent(child_node);
 				if (ecpGeneratorType)
-					actState->setGeneratorType((char*) ecpGeneratorType);
+					actState->setGeneratorType((const char *) ecpGeneratorType);
 				xmlFree(ecpGeneratorType);
 			} else if (!xmlStrcmp(child_node->name, (const xmlChar *) "ROBOT")) {
+
 				xmlChar * robot = xmlNodeGetContent(child_node);
 				if (robot)
 					actState->setRobot((char*) robot);
@@ -249,8 +251,9 @@ common::State * fsautomat::createState(xmlNodePtr stateNode)
 					|| !xmlStrcmp(child_node->name, (const xmlChar *) "Sensor")
 					|| !xmlStrcmp(child_node->name, (const xmlChar *) "Speech")) {
 				xmlChar * stringArgument = xmlNodeGetContent(child_node);
-				if (stringArgument)
-					actState->setStringArgument((char*) stringArgument);
+//askubis
+				if (stringArgument){std::cout<<"ARGUMENT STRINGOWY:                            "<<(char *) stringArgument<<std::endl;
+					actState->setStringArgument((std::string)(char*) stringArgument);}
 				xmlFree(stringArgument);
 			} else if (!xmlStrcmp(child_node->name, (const xmlChar *) "TimeSpan")
 					|| !xmlStrcmp(child_node->name, (const xmlChar *) "AddArg")) {
@@ -269,7 +272,6 @@ common::State * fsautomat::createState(xmlNodePtr stateNode)
 	}
 	xmlFree(stateType);
 	xmlFree(stateID);
-
 	return actState;
 }
 
@@ -279,8 +281,10 @@ std::map <const char *, common::State, ecp_mp::task::task::str_cmp> * fsautomat:
 			common::State, ecp_mp::task::task::str_cmp>();
 
 	std::string fileName(config.value <std::string> ("xml_file", "[xml_settings]"));
-	std::string filePath(mrrocpp_network_path);
+	std::string filePath("../");
 	filePath += fileName;
+
+	std::cout << "XML FilePath: " << filePath << std::endl;
 
 	// open xml document
 	xmlDocPtr doc = xmlParseFile(filePath.c_str());
@@ -368,6 +372,7 @@ run_extended_empty_gen_and_wait(
 
 void fsautomat::executeMotion(common::State &state)
 {
+	std::cout<<"STATE STRING w executeMotion:  "<<state.getStringArgument()<<std::endl;
 int trjConf = config.value<int>("trajectory_from_xml", "[xml_settings]");
 if (trjConf && state.getGeneratorType() == ecp_mp::generator::ECP_GEN_NEWSMOOTH) {
 	set_next_ecps_state(state.getGeneratorType(), state.getNumArgument(), state.getStateID(), 0, 1,
@@ -679,7 +684,7 @@ if (s == 1) {
 }
 manipulation_sequence[str_size] = '\0';
 
-printf("\n%d %d\n", str_size, strlen(manipulation_sequence));
+printf("\n%d %zd\n", str_size, strlen(manipulation_sequence));
 printf("SEQ from win %s\n", rc_solver.from_va.sequence);
 printf("\nSEQ2 %s\n", manipulation_sequence);
 
@@ -776,11 +781,14 @@ BOOST_FOREACH(ecp_mp::sensor_item_t & s, sensor_m) {
 for (; strcmp(nextState, (const char *) "_STOP_"); strcpy(nextState, (*stateMap)[nextState].returnNextStateID(sh))) {
 	if (!strcmp(nextState, (const char *) "_END_"))
 	strcpy(nextState, sh.popTargetName());
+
 	// protection from wrong targetID specyfication
 	if (stateMap->count(nextState) == 0)
 	break;
+std::cout<<"TYP STANU:"<<(*stateMap)[nextState].getType()<<std::endl;
 	if (strcmp((*stateMap)[nextState].getType(), "runGenerator") == 0) {
 		executeMotion((*stateMap)[nextState]);
+		std::cout << "TESTmotion" << std::endl;
 		std::cout << nextState << " -> zakonczony" << std::endl;
 	}
 	if (strcmp((*stateMap)[nextState].getType(), "emptyGenForSet") == 0) {
@@ -804,7 +812,7 @@ for (; strcmp(nextState, (const char *) "_STOP_"); strcpy(nextState, (*stateMap)
 
 	}
 	if (strcmp((*stateMap)[nextState].getType(), "systemInitialization") == 0) {
-		std::cout << "In sensor initialization.." << std::endl;
+		std::cout << "In system initialization.." << std::endl;
 		sensorInitialization();
 		std::cout << nextState << " -> zakonczony" << std::endl;
 
@@ -845,7 +853,6 @@ for (; strcmp(nextState, (const char *) "_STOP_"); strcpy(nextState, (*stateMap)
 
 	}
 }
-
 }
 
 } // namespace task

@@ -1,6 +1,3 @@
-#ifndef MP_TASK_H_
-#define MP_TASK_H_
-
 /*!
  * @file
  * @brief File contains mp base task declaration
@@ -9,15 +6,13 @@
  * @ingroup mp
  */
 
+#ifndef MP_TASK_H_
+#define MP_TASK_H_
+
 #include "base/mp/mp_typedefs.h"
 #include "base/ecp_mp/ecp_mp_task.h"
 
-#if !defined(USE_MESSIP_SRR)
-#include <sys/iofunc.h>
-#include <sys/dispatch.h>
-#else
 #include "base/lib/messip/messip.h"
-#endif
 
 namespace mrrocpp {
 namespace mp {
@@ -37,20 +32,16 @@ namespace task {
  */
 
 #define ACTIVATE_MP_ROBOT(__robot_name) \
-		({ \
-		if (config.value <int> ("is_" #__robot_name "_active", lib::UI_SECTION)) {\
+		if (config.value <int> ("is_active", "[edp_" #__robot_name "]")) {\
 			robot::robot* created_robot = new robot::__robot_name(*this);\
 			robot_m[lib::__robot_name::ROBOT_NAME] = created_robot;\
-		}\
-		})
+		}
 
 #define ACTIVATE_MP_DEFAULT_ROBOT(__robot_name) \
-		({ \
-		if (config.value <int> ("is_" #__robot_name "_active", lib::UI_SECTION)) {\
+		if (config.value <int> ("is_active", "[edp_" #__robot_name "]")) {\
 			robot::robot* created_robot = new robot::robot(lib::__robot_name::ROBOT_NAME, lib::__robot_name::ECP_SECTION, *this, 0);\
 			robot_m[lib::__robot_name::ROBOT_NAME] = created_robot;\
-		}\
-		})
+		}
 
 /*!
  * @brief Base class of all mp tasks
@@ -67,14 +58,10 @@ private:
 	void initialize_communication(void);
 
 public:
-#if !defined(USE_MESSIP_SRR)
 	/**
 	 * @brief communication channels descriptors
 	 */
-	static name_attach_t *mp_pulse_attach;
-#else
-	static messip_channel_t *mp_pulse_attach;
-#endif
+	static lib::fd_server_t mp_pulse_attach;
 
 	/**
 	 * @brief Constructor
@@ -91,7 +78,7 @@ public:
 	 * @brief pure virtual method to create robots
 	 * it have to be reimplemented in inherited classes
 	 */
-	virtual void create_robots(void) =0;
+	virtual void create_robots(void) = 0;
 
 	/**
 	 * @brief Waits for stop pulse from UI and terminated all ECP's

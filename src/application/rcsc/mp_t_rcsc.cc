@@ -38,8 +38,8 @@
 #include "robot/conveyor/mp_r_conveyor.h"
 #include "robot/irp6ot_m/mp_r_irp6ot_m.h"
 #include "robot/irp6p_m/mp_r_irp6p_m.h"
-#include "robot/irp6m/mp_r_irp6m.h"
-#include "robot/speaker/mp_r_speaker.h"
+
+
 #include "robot/polycrank/mp_r_polycrank.h"
 #include "robot/bird_hand/mp_r_bird_hand.h"
 #include "robot/irp6ot_tfg/mp_r_irp6ot_tfg.h"
@@ -350,7 +350,7 @@ bool rubik_cube_solver::communicate_with_windows_solver()
 	}
 	manipulation_sequence[str_size] = '\0';
 
-	printf("\n%d %d\n", str_size, strlen(manipulation_sequence));
+	printf("\n%d %zd\n", str_size, strlen(manipulation_sequence));
 	printf("SEQ from win %s\n", rc_solver.from_va.sequence);
 	printf("\nSEQ2 %s\n", manipulation_sequence);
 
@@ -867,8 +867,8 @@ void rubik_cube_solver::create_robots()
 {
 
 	ACTIVATE_MP_ROBOT(conveyor);
-	ACTIVATE_MP_ROBOT(speaker);
-	ACTIVATE_MP_ROBOT(irp6m);
+	
+	
 	ACTIVATE_MP_ROBOT(polycrank);
 	ACTIVATE_MP_ROBOT(bird_hand);
 	ACTIVATE_MP_ROBOT(irp6ot_tfg);

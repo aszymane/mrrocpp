@@ -19,7 +19,8 @@
 #include <iostream>
 #include <fstream>
 
-// niezbedny naglowek z definiacja PROCESS_SPAWN_RSH
+#include <boost/foreach.hpp>
+
 #include "base/lib/configurator.h"
 #include "base/lib/mis_fun.h"
 
@@ -38,17 +39,17 @@
 //
 //
 
-#if defined(USE_MESSIP_SRR)
+
 #include "base/lib/messip/messip_dataport.h"
-#endif
 
 namespace mrrocpp {
 namespace ui {
 namespace common {
 
 Interface::Interface() :
-	config(NULL), all_ecp_msg(NULL), ui_msg(NULL), is_mp_and_ecps_active(false), all_edps(UI_ALL_EDPS_NONE_EDP_LOADED)
+	config(NULL), is_mp_and_ecps_active(false), all_edps(UI_ALL_EDPS_NONE_EDP_LOADED)
 {
+	main_eb = new function_execution_buffer(*this);
 
 	mp.state = UI_MP_NOT_PERMITED_TO_RUN;// mp wylaczone
 	mp.last_state = UI_MP_NOT_PERMITED_TO_RUN;// mp wylaczone
@@ -61,6 +62,59 @@ Interface::Interface() :
 	is_file_selection_window_open = false;
 	is_teaching_window_open = false;
 	mrrocpp_bin_to_root_path = "../../";
+
+}
+
+int Interface::set_ui_state_notification(UI_NOTIFICATION_STATE_ENUM new_notifacion)
+{
+	if (new_notifacion != notification_state) {
+		int pt_res = PtEnter(0);
+
+		notification_state = new_notifacion;
+
+		switch (new_notifacion)
+		{
+			case UI_N_STARTING:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "STARTING", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_MAGENTA, 0);
+				break;
+			case UI_N_READY:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "READY", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_BLUE, 0);
+				break;
+			case UI_N_BUSY:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "BUSY", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
+				break;
+			case UI_N_EXITING:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "EXITING", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_MAGENTA, 0);
+				break;
+			case UI_N_COMMUNICATION:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "COMMUNICATION", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
+				break;
+			case UI_N_SYNCHRONISATION:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "SYNCHRONISATION", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
+				break;
+			case UI_N_PROCESS_CREATION:
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_TEXT_STRING, "PROCESS CREATION", 0);
+				PtSetResource(ABW_PtLabel_ready_busy, Pt_ARG_COLOR, Pg_RED, 0);
+				break;
+		}
+
+		PtDamageWidget(ABW_PtLabel_ready_busy);
+		PtFlush();
+
+		if (pt_res >= 0)
+			PtLeave(0);
+
+		return 1;
+
+	}
+
+	return 0;
 
 }
 
@@ -83,17 +137,37 @@ void Interface::init()
 	}
 
 	bird_hand = new bird_hand::UiRobot(*this);
+	robot_m[bird_hand->robot_name] = bird_hand;
+
 	irp6ot_m = new irp6ot_m::UiRobot(*this);
+	robot_m[irp6ot_m->robot_name] = irp6ot_m;
+
 	irp6ot_tfg = new irp6ot_tfg::UiRobot(*this);
+	robot_m[irp6ot_tfg->robot_name] = irp6ot_tfg;
+
 	irp6p_m = new irp6p_m::UiRobot(*this);
+	robot_m[irp6p_m->robot_name] = irp6p_m;
+
 	irp6p_tfg = new irp6p_tfg::UiRobot(*this);
+	robot_m[irp6p_tfg->robot_name] = irp6p_tfg;
+
 	sarkofag = new sarkofag::UiRobot(*this);
-	irp6m_m = new irp6m::UiRobot(*this);
+	robot_m[sarkofag->robot_name] = sarkofag;
+
 	conveyor = new conveyor::UiRobot(*this);
-	speaker = new speaker::UiRobot(*this);
+	robot_m[conveyor->robot_name] = conveyor;
+
 	spkm = new spkm::UiRobot(*this);
+	robot_m[spkm->robot_name] = spkm;
+
 	smb = new smb::UiRobot(*this);
+	robot_m[smb->robot_name] = smb;
+
 	shead = new shead::UiRobot(*this);
+	robot_m[shead->robot_name] = shead;
+
+	polycrank = new polycrank::UiRobot(*this);
+	robot_m[polycrank->robot_name] = polycrank;
 
 	ui_node_name = sysinfo.nodename;
 	is_sr_thread_loaded = false;
@@ -129,9 +203,8 @@ void Interface::init()
 	signal(SIGINT, &catch_signal);// by y aby uniemozliwic niekontrolowane zakonczenie aplikacji ctrl-c z kalwiatury
 	signal(SIGALRM, &catch_signal);
 	signal(SIGSEGV, &catch_signal);
-#ifdef PROCESS_SPAWN_RSH
+
 	signal(SIGCHLD, &catch_signal);
-#endif /* PROCESS_SPAWN_RSH */
 
 	lib::set_thread_priority(pthread_self(), lib::QNX_MAX_PRIORITY - 6);
 
@@ -197,6 +270,59 @@ void Interface::init()
 
 }
 
+int Interface::MPup_int()
+
+{
+
+	int pt_res;
+	set_ui_state_notification(UI_N_PROCESS_CREATION);
+
+	if (mp.pid == -1) {
+
+		mp.node_nr = config->return_node_number(mp.node_name.c_str());
+
+		std::string mp_network_pulse_attach_point("/dev/name/global/");
+		mp_network_pulse_attach_point += mp.network_pulse_attach_point;
+
+		// sprawdzenie czy nie jest juz zarejestrowany serwer komunikacyjny MP
+		if (access(mp_network_pulse_attach_point.c_str(), R_OK) == 0) {
+			ui_msg->message(lib::NON_FATAL_ERROR, "mp already exists");
+		} else if (check_node_existence(mp.node_name, "mp")) {
+			mp.pid = config->process_spawn(lib::MP_SECTION);
+
+			if (mp.pid > 0) {
+
+				short tmp = 0;
+				// kilka sekund  (~1) na otworzenie urzadzenia
+				while ((mp.pulse_fd =
+
+				messip::port_connect(mp.network_pulse_attach_point)) == NULL
+
+				)
+					if ((tmp++) < lib::CONNECT_RETRY)
+						usleep(lib::CONNECT_DELAY);
+					else {
+						fprintf(stderr, "name_open() for %s failed: %s\n", mp.network_pulse_attach_point.c_str(), strerror(errno));
+						break;
+					}
+
+				teachingstate = ui::common::MP_RUNNING;
+
+				mp.state = ui::common::UI_MP_WAITING_FOR_START_PULSE; // mp wlaczone
+				pt_res = PtEnter(0);
+				start_process_control_window(NULL, NULL, NULL);
+				if (pt_res >= 0)
+					PtLeave(0);
+			} else {
+				fprintf(stderr, "mp spawn failed\n");
+			}
+			manage_interface();
+		}
+	}
+
+	return 1;
+}
+
 // funkcja odpowiedzialna za wyglad aplikacji na podstawie jej stanu
 
 int Interface::manage_interface(void)
@@ -212,34 +338,12 @@ int Interface::manage_interface(void)
 	// menu file
 	// ApModifyItemState( &file_menu, AB_ITEM_DIM, NULL);
 
-	// Dla robota IRP6 ON_TRACK
-	irp6ot_m->manage_interface();
-	irp6ot_tfg->manage_interface();
 
-	// Dla robota IRP6 POSTUMENT
-	irp6p_m->manage_interface();
-	irp6p_tfg->manage_interface();
-	sarkofag->manage_interface();
-
-	// Dla robota CONVEYOR
-	conveyor->manage_interface();
-
-	// ROBOTY SwamrmItFix
-	spkm->manage_interface();
-	smb->manage_interface();
-	shead->manage_interface();
-
-	bird_hand->manage_interface();
-
-	// Dla robota SPEAKER
-	speaker->manage_interface();
-
-	// Dla robota IRP6 MECHATRONIKA
-	irp6m_m->manage_interface();
-
-	// zadanie
-	// kolorowanie menu all robots
-
+	// uruchmomienie manage interface dla wszystkich robotow
+	BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+				{
+					robot_node.second->manage_interface();
+				}
 
 	// wlasciwosci menu  ABW_base_all_robots
 
@@ -354,11 +458,9 @@ void Interface::reload_whole_configuration()
 
 	if ((mp.state == UI_MP_NOT_PERMITED_TO_RUN) || (mp.state == UI_MP_PERMITED_TO_RUN)) { // jesli nie dziala mp podmien mp ecp vsp
 
+		// UWAGA PRZETESTOWAC NA QNX
 
-#if !defined(USE_MESSIP_SRR)
-		// funkcja dziala niepoprawnie z config serwerem
-		config->change_config_file(config_file);
-#endif
+		config->change_config_file("../" + config_file);
 
 		is_mp_and_ecps_active = config->value <int> ("is_mp_and_ecps_active");
 
@@ -367,31 +469,11 @@ void Interface::reload_whole_configuration()
 			case UI_ALL_EDPS_NONE_EDP_ACTIVATED:
 			case UI_ALL_EDPS_NONE_EDP_LOADED:
 
-				// dla robota irp6 on_track
-				irp6ot_m->reload_configuration();
-				irp6ot_tfg->reload_configuration();
-
-				// dla robota irp6 postument
-				irp6p_m->reload_configuration();
-				irp6p_tfg->reload_configuration();
-
-				sarkofag->reload_configuration();
-
-				// dla robota conveyor
-				conveyor->reload_configuration();
-
-				// ROBOTY SwamrmItFix
-				spkm->reload_configuration();
-				smb->reload_configuration();
-				shead->reload_configuration();
-
-				bird_hand->reload_configuration();
-
-				// dla robota speaker
-				speaker->reload_configuration();
-
-				// dla robota irp6 mechatronika
-				irp6m_m->reload_configuration();
+				// uruchmomienie manage interface dla wszystkich robotow
+				BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+							{
+								robot_node.second->reload_configuration();
+							}
 				break;
 			default:
 				break;
@@ -432,18 +514,24 @@ void Interface::reload_whole_configuration()
 		if (is_mp_and_ecps_active) {
 			mp.network_pulse_attach_point
 					= config->return_attach_point_name(lib::configurator::CONFIG_SERVER, "mp_pulse_attach_point", lib::MP_SECTION);
-			mp.node_name = config->value <std::string> ("node_name", lib::MP_SECTION);
+			if (!config->exists("node_name", lib::MP_SECTION)) {
+				mp.node_name = "localhost";
+			} else {
+				mp.node_name = config->value <std::string> ("node_name", lib::MP_SECTION);
+			}
 			mp.pid = -1;
 		}
 
 		// inicjacja komunikacji z watkiem sr
 		if (ui_msg == NULL) {
-			ui_msg = new lib::sr_ui(lib::UI, ui_attach_point.c_str(), network_sr_attach_point.c_str(), false);
+			ui_msg
+					= (boost::shared_ptr <lib::sr_ui>) new lib::sr_ui(lib::UI, ui_attach_point.c_str(), network_sr_attach_point);
 		}
 
 		// inicjacja komunikacji z watkiem sr
 		if (all_ecp_msg == NULL) {
-			all_ecp_msg = new lib::sr_ecp(lib::ECP, "ui_all_ecp", network_sr_attach_point.c_str(), false);
+			all_ecp_msg
+					= (boost::shared_ptr <lib::sr_ecp>) new lib::sr_ecp(lib::ECP, "ui_all_ecp", network_sr_attach_point);
 		}
 
 		// wypisanie komunikatu o odczytaniu konfiguracji
@@ -468,31 +556,29 @@ void Interface::UI_close(void)
 void Interface::abort_threads()
 
 {
-#if defined(__QNXNTO__)
 	delete ui_sr_obj;
 	delete ui_ecp_obj;
 
 	delete meb_tid;
-#endif
 }
 
 bool Interface::check_node_existence(const std::string & _node, const std::string & beginnig_of_message)
 {
-#if defined(USE_MESSIP_SRR)
-	return true;
-#else
-	std::string opendir_path("/net/");
-	opendir_path += _node;
 
-	if (access(opendir_path.c_str(), R_OK) != 0) {
-		std::string tmp(beginnig_of_message);
-		tmp += std::string(" node: ") + _node + std::string(" is unreachable");
-		ui_msg->message(lib::NON_FATAL_ERROR, tmp);
-
-		return false;
-	}
 	return true;
-#endif
+	/*
+	 std::string opendir_path("/net/");
+	 opendir_path += _node;
+
+	 if (access(opendir_path.c_str(), R_OK) != 0) {
+	 std::string tmp(beginnig_of_message);
+	 tmp += std::string(" node: ") + _node + std::string(" is unreachable");
+	 ui_msg->message(lib::NON_FATAL_ERROR, tmp);
+
+	 return false;
+	 }
+	 return true;
+	 */
 }
 
 // sprawdza czy sa postawione gns's i ew. stawia je
@@ -619,6 +705,65 @@ int Interface::check_gns()
 	return (Pt_CONTINUE);
 }
 
+bool Interface::is_any_robot_active()
+{
+	bool r_value = false;
+	BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+				{
+					if (robot_node.second->state.is_active) {
+						return true;
+					}
+				}
+
+	return r_value;
+}
+
+bool Interface::are_all_robots_synchronised_or_inactive()
+{
+	bool r_value = true;
+	BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+				{
+					r_value = r_value && (((robot_node.second->state.is_active)
+							&& (robot_node.second->state.edp.is_synchronised))
+							|| (!(robot_node.second->state.is_active)));
+
+					if (!r_value) {
+						return false;
+					}
+				}
+
+	return r_value;
+}
+
+bool Interface::are_all_robots_loaded_or_inactive()
+{
+	bool r_value = true;
+	BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+				{
+					r_value = r_value && (((robot_node.second->state.is_active) && (robot_node.second->state.edp.state
+							> 0)) || (!(robot_node.second->state.is_active)));
+
+					if (!r_value) {
+						return false;
+					}
+				}
+
+	return r_value;
+}
+
+bool Interface::is_any_active_robot_loaded()
+{
+	bool r_value = false;
+	BOOST_FOREACH(const common::robot_pair_t & robot_node, robot_m)
+				{
+					if ((robot_node.second->state.is_active) && (robot_node.second->state.edp.state > 0)) {
+						return true;
+					}
+				}
+
+	return r_value;
+}
+
 // ustala stan wszytkich EDP
 int Interface::check_edps_state_and_modify_mp_state()
 {
@@ -626,39 +771,19 @@ int Interface::check_edps_state_and_modify_mp_state()
 	// wyznaczenie stanu wszytkich EDP abstahujac od MP
 
 	// jesli wszytkie sa nieaktywne
-	if ((!(irp6p_m->state.is_active)) && (!(irp6ot_m->state.is_active)) && (!(irp6ot_tfg->state.is_active))
-			&& (!(irp6p_tfg->state.is_active)) && (!(sarkofag->state.is_active)) && (!(conveyor->state.is_active))
-			&& (!(speaker->state.is_active)) && (!(irp6m_m->state.is_active)) && (!(bird_hand->state.is_active))
-			&& (!(spkm->state.is_active)) && (!(smb->state.is_active)) && (!(shead->state.is_active))) {
+	if (!is_any_robot_active()) {
 		all_edps = UI_ALL_EDPS_NONE_EDP_ACTIVATED;
 
 		// jesli wszystkie sa zsynchronizowane
-	} else if (irp6p_m->check_synchronised_or_inactive() && irp6ot_m->check_synchronised_or_inactive()
-			&& conveyor->check_synchronised_or_inactive() && speaker->check_synchronised_or_inactive()
-			&& irp6m_m->check_synchronised_or_inactive() && irp6ot_tfg->check_synchronised_or_inactive()
-			&& irp6p_tfg->check_synchronised_or_inactive() && sarkofag->check_synchronised_or_inactive()
-			&& bird_hand->check_synchronised_or_inactive() && spkm->check_synchronised_or_inactive()
-			&& smb->check_synchronised_or_inactive() && shead->check_synchronised_or_inactive()) {
+	} else if (are_all_robots_synchronised_or_inactive()) {
 		all_edps = UI_ALL_EDPS_LOADED_AND_SYNCHRONISED;
 
 		// jesli wszystkie sa zaladowane
-	} else if (irp6p_m->check_loaded_or_inactive() && irp6ot_m->check_loaded_or_inactive()
-			&& conveyor->check_loaded_or_inactive() && speaker->check_loaded_or_inactive()
-			&& irp6m_m->check_loaded_or_inactive() && irp6ot_tfg->check_loaded_or_inactive()
-			&& irp6p_tfg->check_loaded_or_inactive() && sarkofag->check_loaded_or_inactive()
-			&& bird_hand->check_loaded_or_inactive() && spkm->check_loaded_or_inactive()
-			&& smb->check_loaded_or_inactive() && shead->check_loaded_or_inactive())
-
-	{
+	} else if (are_all_robots_loaded_or_inactive()) {
 		all_edps = UI_ALL_EDPS_LOADED_BUT_NOT_SYNCHRONISED;
 
 		// jesli chociaz jeden jest zaladowany
-	} else if (irp6p_m->check_loaded() || irp6ot_m->check_loaded() || conveyor->check_loaded()
-			|| speaker->check_loaded() || irp6m_m->check_loaded() || irp6ot_tfg->check_loaded()
-			|| irp6p_tfg->check_loaded() || sarkofag->check_loaded() || bird_hand->check_loaded()
-			|| spkm->check_loaded() || smb->check_loaded() || shead->check_loaded())
-
-	{
+	} else if (is_any_active_robot_loaded()) {
 		all_edps = UI_ALL_EDPS_THERE_IS_EDP_LOADED_BUT_NOT_ALL_ARE_LOADED;
 
 		// jesli zaden nie jest zaladowany
@@ -799,15 +924,11 @@ int Interface::initiate_configuration()
 	bool wyjscie = false;
 
 	while (!wyjscie) {
-		time_t now = time(NULL);
-		char now_string[32];
-		strftime(now_string, 8, "_%H%M%S", localtime(&now));
-		session_name = now_string;
-
 		if (config) {
 			delete config;
 		}
-		config = new lib::configurator(ui_node_name, mrrocpp_local_path, config_file, lib::UI_SECTION, session_name);
+
+		config = new lib::configurator(ui_node_name, mrrocpp_local_path, lib::UI_SECTION);
 
 		std::string attach_point =
 				config->return_attach_point_name(lib::configurator::CONFIG_SERVER, "sr_attach_point", lib::UI_SECTION);
@@ -947,11 +1068,8 @@ int Interface::execute_mp_pulse(char pulse_code)
 	if (mp.pulse_fd > 0) {
 		long pulse_value = 1;
 
-#if !defined(USE_MESSIP_SRR)
-		if (MsgSendPulse(mp.pulse_fd, sched_get_priority_min(SCHED_FIFO), pulse_code, pulse_value) == -1)
-#else
-		if(messip::port_send_pulse(mp.pulse_fd, pulse_code, pulse_value))
-#endif
+		if (messip::port_send_pulse(mp.pulse_fd, pulse_code, pulse_value))
+
 		{
 			perror("Blad w wysylaniu pulsu do mp");
 			fprintf(stderr, "Blad w wysylaniu pulsu do mp error: %s \n", strerror(errno));
@@ -992,15 +1110,10 @@ void Interface::unblock_widget(PtWidget_t *widget)
 
 void Interface::create_threads()
 {
-	meb_tid = new feb_thread(main_eb);
+	meb_tid = new feb_thread(*main_eb);
 	ui_ecp_obj = new ecp_buffer(*this);
 	delay(1);
 	ui_sr_obj = new sr_buffer(*this);
-
-#if defined(__QNXNTO__)
-
-#endif
-
 }
 
 }

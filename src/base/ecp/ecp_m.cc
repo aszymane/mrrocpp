@@ -10,8 +10,11 @@
 #include <csignal>
 #include <cstdlib>
 
+#include <boost/shared_ptr.hpp>
+
 #include "base/ecp_mp/transmitter.h"
 
+#include "base/lib/configurator.h"
 #include "base/lib/mis_fun.h"
 #include "base/ecp/ecp_task.h"
 #include "base/ecp/ecp_robot.h"
@@ -22,7 +25,7 @@ namespace mrrocpp {
 namespace ecp {
 namespace common {
 
-common::task::task *ecp_t;
+boost::shared_ptr<common::task::task_base> ecp_t;
 
 void catch_signal_in_ecp(int sig)
 {
@@ -31,8 +34,7 @@ void catch_signal_in_ecp(int sig)
 	{
 		// print info message
 		case SIGTERM:
-			ecp_t->sh_msg->message("ecp terminated");
-			delete ecp_t;
+			ecp_t->sr_ecp_msg->message("ecp terminated");
 			exit(EXIT_SUCCESS);
 			break;
 		case SIGSEGV:
@@ -49,27 +51,26 @@ void catch_signal_in_ecp(int sig)
 int main(int argc, char *argv[])
 {
 	try {
-
 		// liczba argumentow
-		if (argc < 6) {
+		if (argc < 4) {
 			printf("Za malo argumentow ECP\n");
 			return -1;
 		}
 
 		// TODO: this should not be a pointer; blcked by error handling fixup
 		// configuration read
-		lib::configurator * _config = new lib::configurator(argv[1], argv[2], argv[3], argv[4], argv[5]);
+		lib::configurator * _config = new lib::configurator(argv[1], argv[2], argv[3]);
 
-		ecp::common::ecp_t = ecp::common::task::return_created_ecp_task(*_config);
+		ecp::common::ecp_t = (boost::shared_ptr<ecp::common::task::task_base>) ecp::common::task::return_created_ecp_task(*_config);
 
 		lib::set_thread_priority(pthread_self(), lib::QNX_MAX_PRIORITY - 3);
 
-		signal(SIGTERM, &(ecp::common::catch_signal_in_ecp));
-		signal(SIGSEGV, &(ecp::common::catch_signal_in_ecp));
-#if defined(PROCESS_SPAWN_RSH)
 		// ignore Ctrl-C signal, which cames from UI console
 		signal(SIGINT, SIG_IGN);
-#endif
+
+		signal(SIGTERM, &(ecp::common::catch_signal_in_ecp));
+		signal(SIGSEGV, &(ecp::common::catch_signal_in_ecp));
+
 	} catch (ecp_mp::task::ECP_MP_main_error & e) {
 		if (e.error_class == lib::SYSTEM_ERROR)
 			exit(EXIT_FAILURE);
@@ -113,9 +114,9 @@ int main(int argc, char *argv[])
 
 		try {
 			ecp::common::ecp_t->sr_ecp_msg->message("Press START");
-			std::cerr << "ecp 1" << std::endl;
+			//	std::cerr << "ecp 1" << std::endl;
 			ecp::common::ecp_t->ecp_wait_for_start();
-			std::cerr << "ecp 2" << std::endl;
+			//	std::cerr << "ecp 2" << std::endl;
 			ecp::common::ecp_t->main_task_algorithm();
 
 			ecp::common::ecp_t->ecp_wait_for_stop();

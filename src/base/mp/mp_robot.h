@@ -1,6 +1,3 @@
-#ifndef MP_ROBOT_H_
-#define MP_ROBOT_H_
-
 /*!
  * @file
  * @brief File contains mp base robot declaration
@@ -9,7 +6,9 @@
  * @ingroup mp
  */
 
-// niezbedny naglowek z definiacja PROCESS_SPAWN_RSH
+#ifndef MP_ROBOT_H_
+#define MP_ROBOT_H_
+
 #include "base/lib/configurator.h"
 #include "base/lib/sr/sr_ecp.h"
 #include "base/ecp_mp/ecp_mp_robot.h"
@@ -31,42 +30,23 @@ namespace robot {
  */
 class robot : public ecp_mp::robot
 {
-
 private:
 	/**
 	 * @brief nummber of servos (joints)
 	 */
 	const int number_of_servos;
 
-#if !defined(PROCESS_SPAWN_RSH)
-
-	/**
-	 * @brief node descriptor of spawned ECP process
-	 */
-	uint32_t nd;
-#endif
-
 	/**
 	 * @brief pid of spawned ECP process
 	 */
 	pid_t ECP_pid;
 
-#if !defined(USE_MESSIP_SRR)
-
 	/**
 	 * @brief main ECP communication channel descriptor
 	 */
-	int ECP_fd;
-#else
-
-	/**
-	 * @brief main ECP communication channel descriptor
-	 */
-	messip_channel_t* ECP_fd;
-#endif
+	lib::fd_client_t ECP_fd;
 
 protected:
-
 	/**
 	 * @brief mp taks object reference
 	 */

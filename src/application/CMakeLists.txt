@@ -1,4 +1,5 @@
 # Recurse into subdirectories.
+
 add_subdirectory (image_switching)
 #add_subdirectory (bird_hand_test)
 #add_subdirectory (ball)
@@ -25,6 +26,3 @@ add_subdirectory (servovision)
 add_subdirectory (ecp_transparent)
 add_subdirectory (mp_common)
 add_subdirectory (swarm_demo)
-
-
-

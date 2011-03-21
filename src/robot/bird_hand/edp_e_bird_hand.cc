@@ -1,15 +1,3 @@
-// ------------------------------------------------------------------------
-// Proces:		EDP
-// Plik:			edp_irp6m_effector.cc
-// System:	QNX/MRROC++  v. 6.3
-// Opis:		Robot IRp-6 na postumencie
-//				- definicja metod klasy edp_irp6m_effector
-//				- definicja funkcji return_created_efector()
-//
-// Autor:
-// Data:		14.02.2007
-// ------------------------------------------------------------------------
-
 #include <cstdio>
 
 #include "edp_combuf.h"
@@ -122,8 +110,6 @@ effector::effector(lib::configurator &_config) :
 /*--------------------------------------------------------------------------*/
 void effector::move_arm(const lib::c_buffer &instruction)
 {
-
-	struct timespec current_timespec;
 	lib::JointArray desired_joints_tmp_abs(number_of_servos); // Wspolrzedne wewnetrzne
 	lib::JointArray desired_joints_tmp_rel(number_of_servos);
 	lib::MotorArray desired_motor_pos_new_tmp_abs(number_of_servos);
@@ -164,6 +150,7 @@ void effector::move_arm(const lib::c_buffer &instruction)
 
 	std::stringstream ss(std::stringstream::in | std::stringstream::out);
 
+	struct timespec current_timespec;
 	if (clock_gettime(CLOCK_MONOTONIC, &current_timespec) == -1) {
 		perror("clock gettime");
 	}
@@ -206,7 +193,10 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 
 	// zawieszenie do query_time
 
-	clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &query_timespec, NULL);
+	int err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &query_timespec, NULL);
+	if (err != 0) {
+		fprintf(stderr, "clock_nanosleep(): %s\n", strerror(err));
+	}
 
 	if (robot_test_mode) {
 		for (int i = 0; i < number_of_servos; i++) {
@@ -303,8 +293,8 @@ void effector::create_kinematic_models_for_given_robot(void)
 /*--------------------------------------------------------------------------*/
 void effector::create_threads()
 {
-	rb_obj = (boost::shared_ptr<common::reader_buffer>) new common::reader_buffer(*this);
-	vis_obj = (boost::shared_ptr<common::vis_server>) new common::vis_server(*this);
+	rb_obj = (boost::shared_ptr <common::reader_buffer>) new common::reader_buffer(*this);
+	vis_obj = (boost::shared_ptr <common::vis_server>) new common::vis_server(*this);
 }
 
 void effector::instruction_deserialization()
@@ -317,7 +307,7 @@ void effector::instruction_deserialization()
 void effector::reply_serialization(void)
 {
 	memcpy(reply.arm.serialized_reply, &edp_ecp_rbuffer, sizeof(edp_ecp_rbuffer));
-
+	assert(sizeof(reply.arm.serialized_reply) >= sizeof(edp_ecp_rbuffer));
 }
 
 }

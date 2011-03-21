@@ -4,29 +4,22 @@
 
 /* Standard headers */
 #include <cstdio>
-#include <cstdlib>
 #include <unistd.h>
 #include <cstring>
-#include <cerrno>// Y&7
 #include <ctime>
-#include <iostream>
 #include <fstream>
-#include <boost/circular_buffer.hpp>
 
 #include "ui/src/ui.h"
 
 #include "base/lib/sr/srlib.h"
-// #include "base/ecp/ecp.h"
-#include "base/lib/com_buf.h"
 #include "ui/src/ui_class.h"
 #include "ui/src/ui_sr.h"
 
 /* Local headers */
-#include "ablibs.h"
+//#include "ablibs.h"
 #include "abimport.h"
-#include "proto.h"
+//#include "proto.h"
 
-ui::common::busy_flag communication_flag;
 
 extern ui::common::Interface interface;
 
@@ -42,13 +35,6 @@ int OnTimer(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 
 	Iteration_counter++;
-
-	if ((Iteration_counter % ui::common::CHECK_SPEAKER_STATE_ITER) == 0) {
-		if (interface.speaker->is_wind_speaker_play_open) // otworz okno
-		{
-			speaker_check_state(widget, apinfo, cbinfo);
-		}
-	}
 
 	if (!(interface.ui_sr_obj->buffer_empty())) { // by Y jesli mamy co wypisywac
 
@@ -68,9 +54,9 @@ int OnTimer(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 
 			snprintf(current_line, 100, "%-10s", sr_msg.host_name);
 			strcat(current_line, "  ");
-                        uint32_t time =  sr_msg.time/1000000000;
-                        strftime(current_line + 12, 100, "%H:%M:%S", localtime(&time));
-                        sprintf(current_line + 20, ".%03d   ", (sr_msg.time%1000000000) / 1000000);
+			uint32_t time = sr_msg.tv.tv_sec;
+			strftime(current_line + 12, 100, "%H:%M:%S", localtime(&time));
+			sprintf(current_line + 20, ".%03d   ", (sr_msg.tv.tv_usec / 1000));
 
 			switch (sr_msg.process_type)
 			{
@@ -146,7 +132,7 @@ int OnTimer(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 	}
 
 	if (interface.ui_state == 2) {// jesli ma nastapic zamkniecie z aplikacji
-		set_ui_state_notification(UI_N_EXITING);
+		interface.set_ui_state_notification(UI_N_EXITING);
 		// 	printf("w ontimer 2\n");
 		closing_delay_counter = 20;// opoznienie zamykania
 		interface.ui_state = 3;
@@ -174,8 +160,8 @@ int OnTimer(PtWidget_t *widget, ApInfo_t *apinfo, PtCallbackInfo_t *cbinfo)
 		interface.abort_threads();
 		PtExit(EXIT_SUCCESS);
 	} else {
-		if (!(communication_flag.is_busy())) {
-			set_ui_state_notification(UI_N_READY);
+		if (!(interface.communication_flag.is_busy())) {
+			interface.set_ui_state_notification(UI_N_READY);
 		}
 
 	}

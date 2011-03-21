@@ -2,7 +2,7 @@
 #include "base/lib/impconst.h"
 #include "base/lib/com_buf.h"
 
-#include "base/lib/sr/srlib.h"
+#include "base/lib/sr/sr_ecp.h"
 #include "ecp_st_smooth_file_from_mp.h"
 #include "generator/ecp/ecp_g_newsmooth.h"
 
@@ -16,10 +16,10 @@ namespace ecp {
 namespace common {
 namespace sub_task {
 
-sub_task_smooth_file_from_mp::sub_task_smooth_file_from_mp(task::task & _ecp_t, lib::ECP_POSE_SPECIFICATION pose_spec) :
-	sub_task(_ecp_t)
+sub_task_smooth_file_from_mp::sub_task_smooth_file_from_mp(task::task & _ecp_t, lib::ECP_POSE_SPECIFICATION pose_spec, bool _detect_jerks) :
+	sub_task(_ecp_t), detect_jerks(true)
 {
-
+	detect_jerks = _detect_jerks;
 	switch (pose_spec)
 	{
 		case lib::ECP_JOINT:
@@ -41,11 +41,18 @@ void sub_task_smooth_file_from_mp::conditional_execution()
 
 	path = std::string("");
 	sgen->reset();
-	path += ecp_t.mp_command.ecp_next_state.mp_2_ecp_next_state_string;
+	path += ecp_t.mp_command.ecp_next_state.get_mp_2_ecp_next_state_string();
 	sgen->load_trajectory_from_file(path.c_str());
 
-	if (sgen->calculate_interpolate() && sgen->detect_jerks(1) == 0) {
-		sgen->Move();
+	if (detect_jerks) {
+		if (sgen->calculate_interpolate() && sgen->detect_jerks(1) == 0) {
+			sgen->Move();
+		}
+	} else {
+
+		if (sgen->calculate_interpolate()) {
+			sgen->Move();
+		}
 	}
 }
 

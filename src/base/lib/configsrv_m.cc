@@ -20,21 +20,23 @@
 #include "base/lib/configsrv.h"
 #include "base/lib/config_types.h"
 
-void
-sigint_handler(int signum)
-{
-	exit(-1);
-}
-
 int
 main(int argc, char *argv[])
 {
-	configsrv config(argv[1], argv[2]);
+	// TODO: handle exceptions at the top level
+
+	// Object with access to the configuration
+	configsrv config(argv[1]);
+
+	// Use config file is supplied with a command line
+	if (argc > 2) {
+		config.change_ini_file(argv[2]);
+	}
 
 	messip_channel_t *ch = messip::port_create(CONFIGSRV_CHANNEL_NAME);
 	assert(ch);
 
-	if (signal(SIGINT, sigint_handler) == SIG_ERR) {
+	if (signal(SIGINT, SIG_IGN) == SIG_ERR) {
 		perror("signal()");
 	}
 
@@ -68,7 +70,18 @@ main(int argc, char *argv[])
 					reply.key = config.value(query.key);
 					reply.flag = true;
 				} catch (boost::property_tree::ptree_error & e) {
-					// Do nothing. Reply will send the error flag.
+					std::string err = e.what();
+					std::string tmp("No such node (");
+					bool print=false;
+					for (std::size_t i=0;i<tmp.size()-1;++i){
+						if(err[i]!=tmp[i]){
+							print=true;
+							break;
+						}
+					}
+					if(print)
+						std::cerr<<e.what()<<std::endl;
+					// Print the error to the standard error output
 				}
 			}
 			messip::port_reply(ch, rcvid, 0, reply);

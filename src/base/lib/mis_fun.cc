@@ -44,9 +44,9 @@ void set_thread_priority(pthread_t thread, int sched_priority_l)
             fprintf(stderr, "requested thread priority (%d) not in <%d:%d> priority range\n", sched_priority_l, policy_priority_min, policy_priority_max);
         } else {
 		param.sched_priority = sched_priority_l;
-                if (pthread_setschedparam(thread, SCHED_RR, &param)) {
-                        perror("pthread_setschedparam() ");
-		}
+//                if (pthread_setschedparam(thread, SCHED_RR, &param)) {
+//                        perror("pthread_setschedparam() ");
+//		}
         }
 }
 
@@ -66,6 +66,19 @@ int set_thread_name(const char * newname)
 	return 0;
 #endif
 	return -1;
+}
+
+#ifndef TIMESPEC_VALID
+# define TIMESPEC_VALID(__ts) ((__ts)->tv_nsec >= 0 && (__ts)->tv_nsec < 1000000000L)
+#endif
+
+void timespec_increment_ns(struct timespec * ts, unsigned long increment)
+{
+	ts->tv_nsec += increment;
+	while (ts->tv_nsec >= 1000000000) {
+		  ts->tv_sec  += 1;
+		  ts->tv_nsec -= 1000000000;
+	}
 }
 
 } // namespace lib

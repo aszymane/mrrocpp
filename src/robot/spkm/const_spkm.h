@@ -11,8 +11,6 @@
 
 #include "robot/spkm/dp_spkm.h"
 
-#include "base/lib/impconst.h"
-
 namespace mrrocpp {
 namespace lib {
 namespace spkm {
@@ -29,11 +27,16 @@ const robot_name_t ROBOT_NAME = "ROBOT_SPKM";
  */
 enum CBUFFER_VARIANT
 {
-	CBUFFER_EPOS_CUBIC_COMMAND,
-	CBUFFER_EPOS_TRAPEZOIDAL_COMMAND,
-	CBUFFER_EPOS_OPERATIONAL_COMMAND,
-	CBUFFER_EPOS_BRAKE_COMMAND
+	POSE,
+	QUICKSTOP,
+	CLEAR_FAULT
 };
+
+//! Pose specification variants
+typedef enum _POSE_SPECIFICATION
+{
+	FRAME, JOINT, MOTOR
+} POSE_SPECIFICATION;
 
 /*!
  * @brief SwarmItFix Parallel Kinematic Machine EDP command buffer
@@ -41,15 +44,48 @@ enum CBUFFER_VARIANT
  */
 struct cbuffer
 {
+	//! Variant of the command
 	CBUFFER_VARIANT variant;
-	union
-	{
-		epos::epos_cubic_command epos_cubic_command_structure;
-		epos::epos_trapezoidal_command epos_trapezoidal_command_structure;
-		epos::epos_operational_command epos_operational_command_structure;
-	};
 
-};
+	//! Pose specification type
+	POSE_SPECIFICATION pose_specification;
+
+	//! Motion interpolation variant
+	lib::epos::EPOS_MOTION_VARIANT motion_variant;
+
+	int32_t motor_pos[NUM_OF_SERVOS];
+	double joint_pos[NUM_OF_SERVOS];
+	double goal_pos[6];
+
+	//! Give access to boost::serialization framework
+	friend class boost::serialization::access;
+
+	//! Serialization of the data structure
+	template <class Archive>
+	void serialize(Archive & ar, const unsigned int version)
+	{
+		ar & variant;
+		switch (variant) {
+			case POSE:
+				ar & pose_specification;
+				switch (pose_specification) {
+					case FRAME:
+						ar & goal_pos;
+						break;
+					case JOINT:
+						ar & joint_pos;
+						break;
+					case MOTOR:
+						ar & motor_pos;
+						break;
+				}
+				ar & motion_variant;
+				break;
+			default:
+				break;
+		};
+	}
+}__attribute__((__packed__));
 
 /*!
  * @brief SwarmItFix Parallel Kinematic Machine EDP reply buffer
@@ -57,9 +93,22 @@ struct cbuffer
  */
 struct rbuffer
 {
+	lib::frame_tab current_frame;
 	epos::single_controller_epos_reply epos_controller[NUM_OF_SERVOS];
 	bool contact;
-};
+
+	//! Give access to boost::serialization framework
+	friend class boost::serialization::access;
+
+	//! Serialization of the data structure
+	template <class Archive>
+	void serialize(Archive & ar, const unsigned int version)
+	{
+		ar & current_frame;
+		ar & epos_controller;
+		ar & contact;
+	}
+}__attribute__((__packed__));
 
 /*!
  * @brief configuration file EDP SwarmItFix Parallel Kinematic Machine section string

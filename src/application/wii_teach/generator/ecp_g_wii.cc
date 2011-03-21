@@ -1,6 +1,7 @@
+#include <cmath>
+
 #include "base/lib/impconst.h"
 #include "base/lib/com_buf.h"
-#include "math.h"
 
 #include "base/ecp/ecp_robot.h"
 #include "application/wii_teach/generator/ecp_g_wii.h"
@@ -11,7 +12,8 @@ namespace ecp {
 namespace irp6ot_m {
 namespace generator {
 
-wii::wii (common::task::task& _ecp_task,ecp_mp::sensor::wiimote* _wiimote) : generator(_ecp_task), _wiimote(_wiimote)
+wii::wii (common::task::task& _ecp_task,ecp_mp::sensor::wiimote* _wiimote) :
+	common::generator::generator(_ecp_task), _wiimote(_wiimote)
 {
     for(int i  = 0;i < MAX_NO_OF_DEGREES;++i)
     {

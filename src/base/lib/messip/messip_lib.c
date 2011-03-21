@@ -50,18 +50,9 @@
 #include <assert.h>
 #include <sys/select.h>
 #include <netinet/tcp.h>
-#if defined(__linux__)
-#include <endian.h>
-#elif defined(__FreeBSD__)
-#include <sys/endian.h>
-#elif defined(__APPLE__)  && defined(__MACH__)
-#include <machine/endian.h>
-#elif defined(__QNX__)
+#if defined(__QNX__)
 #include <sys/param.h>
 #include <sys/netmgr.h>
-#elif defined(sun)
-#else
-#error Unsupported platform!
 #endif
 
 #ifdef __gnu_linux__
@@ -167,27 +158,30 @@ _init(  )
 #endif
 
 
-int
+ssize_t
 messip_writev( int sockfd,
    const struct iovec *iov,
    int iovcnt )
 {
-	int dcount;
-	int cnt = 0;
+	ssize_t dcount;
+	unsigned int cnt = 0;
 
 	for ( ;; )
 	{
 		dcount = writev( sockfd, iov, iovcnt );
-		if ( (dcount == -1) && (errno == EINTR) )
-			continue;
-		if ( dcount == -1 )
-			fprintf( stderr, "%d: %s %d: dcount=%d errno=%d (%s) fileno: %d %d\n",
+		if(dcount == -1) {
+			if(errno == EINTR)
+				continue;
+
+			fprintf( stderr, "%d: %s %d: dcount=%zd errno=%d (%s) fileno: %d %d\n",
 			   getpid(), __FILE__, __LINE__, dcount, errno, strerror(errno), sockfd, cnt++ );
-		if ( errno == EPIPE )
-			return dcount;
-		//assert( dcount != -1 );
-		if (!(dcount != -1)) {
-			fprintf(stderr, "assert( dcount != -1 ) failed at %s:%d\n", __FILE__, __LINE__);
+
+			// Reading end has been closed
+			if ( errno == EPIPE )
+				return dcount;
+
+			// Another errors are not expected
+			assert(0);
 		}
 		break;
 	}							// for (;;)
@@ -197,25 +191,30 @@ messip_writev( int sockfd,
 }								// messip_writev
 
 
-int
+ssize_t
 messip_readv( int sockfd,
    const struct iovec *iov,
    int iovcnt )
 {
-	int dcount;
-	int cnt = 0;
+	ssize_t dcount;
+	unsigned int cnt = 0;
 
 	for ( ;; )
 	{
 		dcount = readv( sockfd, iov, iovcnt );
-		if ( (dcount == -1) && (errno == EINTR) )
-			continue;
-		if ( (dcount == -1) && (errno == ECONNRESET) )
-			return -1;
-		if ( dcount == -1 )
-			fprintf( stderr, "%d: %s %d: dcount=%d errno=%d %d\n",
+		if(dcount == -1) {
+			if(errno == EINTR)
+				continue;
+			if (errno == ECONNRESET)
+				return -1;
+
+			fprintf( stderr, "%d: %s %d: dcount=%zd errno=%d %d\n",
 			   getpid(), __FILE__, __LINE__, dcount, errno, cnt++ );
-		assert( dcount != -1 );
+
+			// Another errors are not expected
+			assert(0);
+		}
+
 		break;
 	}							// for (;;)
 
@@ -244,33 +243,9 @@ messip_select( int fd,
 
 }								// messip_select
 
-
-int
-messip_int_little_endian( const int v1 )
-{
-#if BYTE_ORDER == BIG_ENDIAN
-	unsigned char *p,
-	 *q;
-	int v2;
-
-	p = ( unsigned char * ) &v1;
-	q = ( unsigned char * ) &v2;
-	q[3] = p[0];
-	q[2] = p[1];
-	q[1] = p[2];
-	q[0] = p[3];
-	return v2;
-#elif BYTE_ORDER == LITTLE_ENDIAN
-	return v1;
-#else
-#error
-#endif
-}								// messip_int_little_endian
-
-
 messip_cnx_t *
 messip_connect0(const char *mgr_ref,
-   int32_t msec_timeout,
+   int msec_timeout,
    pid_t pid,
    pthread_t tid )
 {
@@ -288,11 +263,6 @@ messip_connect0(const char *mgr_ref,
 	messip_reply_connect_t reply;
 	struct iovec iovec[2];
 	const int flag = 1;
-
-#if BYTE_ORDER == BIG_ENDIAN
-	pid = messip_int_little_endian( pid );
-	tid = messip_int_little_endian( tid );
-#endif
 
 	/*--- NULL and /etc/messip does not exist ? ---*/
 	port = MESSIP_DEFAULT_PORT;
@@ -415,17 +385,10 @@ messip_connect0(const char *mgr_ref,
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len  = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
-#if BYTE_ORDER == LITTLE_ENDIAN
-	op = MESSIP_OP_CONNECT;
-	msgsend.little_endian = 1;
-#elif BYTE_ORDER == BIG_ENDIAN
-	op = messip_int_little_endian( MESSIP_OP_CONNECT );
-	msgsend.little_endian = 0;
-#else
-#	error
-#endif
-	msgsend.pid = pid;
-	msgsend.tid = tid;
+	op = htonl( MESSIP_OP_CONNECT );
+	msgsend.little_endian = (htonl(0x1234) == 0x1234) ? 0 : 1;
+	msgsend.pid = htonl(pid);
+	msgsend.tid = htonl(tid);
 	get_taskname( pid, msgsend.process_name );
 	iovec[1].iov_base = &msgsend;
 	iovec[1].iov_len  = sizeof( msgsend );
@@ -467,7 +430,7 @@ messip_connect0(const char *mgr_ref,
 
 messip_cnx_t *
 messip_connect(const char *mgr_ref,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	return messip_connect0( mgr_ref, msec_timeout, getpid(  ), pthread_self(  ) );
 }								// messip_connect
@@ -502,7 +465,6 @@ messip_sin( char *mgr_ref )
 	}
 
 	/*--- Connect socket using name specified ---*/
-	server.sin_family = AF_INET;
 	hp = gethostbyname( hostname );
 	if ( hp == NULL )
 	{
@@ -525,6 +487,7 @@ messip_sin( char *mgr_ref )
 	}
 
 	/*--- Connect to the port ---*/
+	server.sin_family = AF_INET;
 	memcpy( &server.sin_addr, hp->h_addr, hp->h_length );
 	server.sin_port = htons( port );
 	status = connect( sockfd, ( const struct sockaddr * ) &server, sizeof( server ) );
@@ -539,13 +502,7 @@ messip_sin( char *mgr_ref )
 	}
 
 	/*--- Send a message to the server ---*/
-#if BYTE_ORDER == LITTLE_ENDIAN
-	op = MESSIP_OP_SIN;
-#elif BYTE_ORDER == BIG_ENDIAN
-	op = messip_int_little_endian( MESSIP_OP_SIN );
-#else
-#error
-#endif
+	op = htonl( MESSIP_OP_SIN );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len  = sizeof( int32_t );
 	status = messip_writev(sockfd, iovec, 1 );
@@ -585,7 +542,7 @@ select_handler( select_context_t *ctp, int fd,
 static messip_channel_t *
 messip_channel_create0( messip_cnx_t * cnx,
    const char *name,
-   int32_t msec_timeout,
+   int msec_timeout,
    int32_t maxnb_msg_buffered )
 {
 	int status;
@@ -649,7 +606,10 @@ messip_channel_create0( messip_cnx_t * cnx,
 	getsockname( sockfd, ( struct sockaddr * ) &sock_name, &sock_namelen );
 	server_addr.sin_port = ntohs( sock_name.sin_port );
 
-	listen( sockfd, 8 );
+	/* Specify the size of the connection queue */
+	if (listen( sockfd, 8 ) == -1) {
+		perror("listen()");
+	}
 
 	/*--- Ready to write ? ---*/
 	if ( msec_timeout != MESSIP_NOTIMEOUT )
@@ -669,13 +629,14 @@ messip_channel_create0( messip_cnx_t * cnx,
 	}							// if
 
 	/*--- Send a message to the server ---*/
-	op = messip_int_little_endian( MESSIP_OP_CHANNEL_CREATE );
+	op = htonl( MESSIP_OP_CHANNEL_CREATE );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len  = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
-	msgsend.pid = cnx->remote_pid;
-	msgsend.tid = cnx->remote_tid;
-	msgsend.maxnb_msg_buffered = maxnb_msg_buffered;
+	msgsend.pid = htonl(cnx->remote_pid);
+	msgsend.tid = htonl(cnx->remote_tid);
+	msgsend.maxnb_msg_buffered = htonl(maxnb_msg_buffered);
+	assert(strlen(name) < MESSIP_CHANNEL_NAME_MAXLEN);
 	strncpy( msgsend.channel_name, name, MESSIP_CHANNEL_NAME_MAXLEN );
 	msgsend.channel_name[ MESSIP_CHANNEL_NAME_MAXLEN ] = 0;
 #if USE_QNXMSG
@@ -685,11 +646,12 @@ messip_channel_create0( messip_cnx_t * cnx,
 		strncpy( msgsend.qnxnode_name, qnxnode, MESSIP_QNXNODE_NAME_MAXLEN );
 		msgsend.qnxnode_name[ MESSIP_QNXNODE_NAME_MAXLEN ] = 0;
 	}
-#else
-	msgsend.qnxnode_name[0] = 0;
 #endif
-	msgsend.sin_port = server_addr.sin_port;
-	strcpy( msgsend.sin_addr_str, inet_ntoa( server_addr.sin_addr ) );
+	msgsend.sin_port = htons(server_addr.sin_port);
+	//strncpy( msgsend.sin_addr_str, inet_ntoa( server_addr.sin_addr ), sizeof(msgsend.sin_addr_str) );
+	if(gethostname(msgsend.hostname, sizeof(msgsend.hostname)) == -1) {
+		perror("gethostname()");
+	}
 	iovec[1].iov_base = &msgsend;
 	iovec[1].iov_len  = sizeof( msgsend );
 	status = messip_writev( cnx->sockfd, iovec, 2 );
@@ -722,7 +684,7 @@ messip_channel_create0( messip_cnx_t * cnx,
 	assert( dcount == sizeof( messip_reply_channel_create_t ) );
 
 	/*--- Channel creation failed ? ---*/
-	if ( reply.ok == MESSIP_NOK )
+	if ( reply.ok != MESSIP_OK )
 	{
 		close( sockfd );
 		errno = EEXIST;
@@ -731,14 +693,14 @@ messip_channel_create0( messip_cnx_t * cnx,
 
 	/*--- Ok ---*/
 	ch = (messip_channel_t *)malloc( sizeof( messip_channel_t ) );
-	strcpy( ch->name, name );
+	strncpy( ch->name, name, sizeof(ch->name) );
 	ch->cnx = cnx;
 	ch->remote_pid = cnx->remote_pid;
 	ch->remote_tid = cnx->remote_tid;
 	get_taskname( cnx->remote_pid, ch->remote_taskname );
-	ch->sin_port = reply.sin_port;
-	ch->sin_addr = reply.sin_addr;
-	strcpy( ch->sin_addr_str, reply.sin_addr_str );
+	ch->sin_port = ntohs(reply.sin_port);
+	ch->sin_addr = ntohl(reply.sin_addr);
+	//strncpy( ch->sin_addr_str, reply.sin_addr_str, sizeof(ch->sin_addr_str) );
 	ch->recv_sockfd_sz = 0;
 	ch->recv_sockfd[ch->recv_sockfd_sz++] = sockfd;
 	ch->send_sockfd = -1;
@@ -789,7 +751,7 @@ messip_channel_create0( messip_cnx_t * cnx,
 	/* Attach a callback (handler) for two message types */
 	if (message_attach( ch->dpp, &ch->message_attr,
                                  _IO_MAX + 1, _IO_MAX + 2, message_handler, ch )) {
-        perror("message_attach()");
+	perror("message_attach()");
 	}
 
 	if (pulse_attach( ch->dpp, 0, _PULSE_CODE_DISCONNECT,
@@ -819,7 +781,7 @@ messip_channel_create0( messip_cnx_t * cnx,
 messip_channel_t *
 messip_channel_create( messip_cnx_t * cnx,
    const char *name,
-   int32_t msec_timeout,
+   int msec_timeout,
    int32_t maxnb_msg_buffered )
 {
 	messip_channel_t *ret;
@@ -832,7 +794,7 @@ messip_channel_create( messip_cnx_t * cnx,
 
 static int
 messip_channel_delete0( messip_channel_t * ch,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int status;
 	ssize_t dcount;
@@ -860,13 +822,13 @@ messip_channel_delete0( messip_channel_t * ch,
 	}							// if
 
 	/*--- Send a message to the server ---*/
-	op = messip_int_little_endian( MESSIP_OP_CHANNEL_DELETE );
+	op = htonl( MESSIP_OP_CHANNEL_DELETE );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
 	msgsend.pid = getpid(  );
 	msgsend.tid = pthread_self(  );
-	strcpy( msgsend.name, ch->name );
+	strncpy( msgsend.name, ch->name, sizeof(msgsend.name) );
 	iovec[1].iov_base = &msgsend;
 	iovec[1].iov_len  = sizeof( msgsend );
 	status = messip_writev( ch->cnx->sockfd, iovec, 2 );
@@ -957,7 +919,7 @@ messip_channel_delete0( messip_channel_t * ch,
 
 int
 messip_channel_delete( messip_channel_t * ch,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int ret;
 	pthread_mutex_lock(&messip_cnx_mutex);
@@ -969,7 +931,7 @@ messip_channel_delete( messip_channel_t * ch,
 static messip_channel_t *
 messip_channel_connect0( messip_cnx_t * cnx,
    const char *name,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int status;
 	messip_channel_t *info = NULL;
@@ -982,6 +944,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 	messip_reply_channel_connect_t msgreply;
 	struct iovec iovec[2];
 	struct sockaddr_in sockaddr;
+	struct hostent *hp;
 	const int flag = 1;
 #ifdef USE_QNXMSG
 	char namepath[PATH_MAX + NAME_MAX + 1];
@@ -1013,7 +976,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 	}							// if
 
 	/*--- Send a message to the messip manager ---*/
-	op = messip_int_little_endian( MESSIP_OP_CHANNEL_CONNECT );
+	op = htonl( MESSIP_OP_CHANNEL_CONNECT );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
@@ -1057,7 +1020,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 	LIBTRACE( ( "@channel_connect: reply dcount=%d already_connected=%d\n", dcount,
 		  msgreply.f_already_connected ) );
 	if ( dcount != sizeof( messip_reply_channel_connect_t ) )
-		fprintf( stderr, "dcount=%d errno=%d\n", dcount, errno );
+		fprintf( stderr, "dcount=%zd errno=%d\n", dcount, errno );
 	assert( dcount == sizeof( messip_reply_channel_connect_t ) );
 
 	/*--- Locate channel has failed ? ---*/
@@ -1111,7 +1074,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 				info->sin_port = htons(0);
 				info->sin_addr = htonl( INADDR_LOOPBACK );
 				//strcpy( info->sin_addr_str, inet_ntoa(info->sin_addr) );
-				strcpy( info->name, name );
+				strncpy( info->name, name, sizeof(info->name) );
 				return info;
 			}
 		}
@@ -1127,17 +1090,20 @@ messip_channel_connect0( messip_cnx_t * cnx,
 			info->sin_port = htons(0);
 			info->sin_addr = htonl( INADDR_LOOPBACK );
 			//strcpy( info->sin_addr_str, inet_ntoa(info->sin_addr) );
-			strcpy( info->name, name );
+			strncpy( info->name, name, sizeof(info->name) );
 			return info;
 		}
 #endif /* USE_QNXMSG */
 
 		info->remote_pid = msgreply.pid;
 		info->remote_tid = msgreply.tid;
-		info->sin_port = msgreply.sin_port;
-		info->sin_addr = msgreply.sin_addr;
-		strcpy( info->sin_addr_str, msgreply.sin_addr_str );
-		strcpy( info->name, name );
+		info->sin_port = ntohs(msgreply.sin_port);
+		info->sin_addr = ntohl(msgreply.sin_addr);
+		//strncpy( info->sin_addr_str, msgreply.sin_addr_str, sizeof(info->sin_addr_str));
+		strncpy( info->hostname, msgreply.hostname, sizeof(info->hostname));
+		info->hostname[sizeof(info->hostname)-1] = 0;
+		assert(strlen(info->hostname) < sizeof(info->hostname));
+		strncpy( info->name, name, sizeof(info->name) );
 
 		/*--- Create socket ---*/
 		info->send_sockfd = socket( MESSIP_SOCK_DOMAIN, MESSIP_SOCK_TYPE, MESSIP_SOCK_PROTO );
@@ -1145,9 +1111,11 @@ messip_channel_connect0( messip_cnx_t * cnx,
 		if ( info->send_sockfd < 0 )
 		{
 			perror("socket()");
+			pthread_mutex_destroy(&info->send_mutex);
 			free(info);
 			return NULL;
 		}
+
 		fcntl( info->send_sockfd, F_SETFL, FD_CLOEXEC );
 
 		/* Disable the Nagle (TCP No Delay) algorithm */
@@ -1159,7 +1127,25 @@ messip_channel_connect0( messip_cnx_t * cnx,
 		memset( &sockaddr, 0, sizeof( sockaddr ) );
 		sockaddr.sin_family = AF_INET;
 		sockaddr.sin_port = htons( info->sin_port );
+
+#if 0
+		// Connect to IP address as returned by messip_mgr
 		sockaddr.sin_addr.s_addr = info->sin_addr;
+#else
+		// Connect to hostname as resolved by name
+		hp = gethostbyname( info->hostname );
+		if ( hp == NULL )
+		{
+			fprintf( stderr, "*** %s : unknown host!***\n", info->hostname );
+			close( info->send_sockfd );
+			pthread_mutex_destroy(&info->send_mutex);
+			free(info);
+			return NULL;
+		}
+
+		memcpy( &sockaddr.sin_addr, hp->h_addr, hp->h_length );
+#endif
+
 		if ( connect( info->send_sockfd,
 			  ( const struct sockaddr * ) &sockaddr, sizeof( sockaddr ) ) < 0 )
 		{
@@ -1167,6 +1153,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 			fprintf( stderr, "%s %d:\n\tUnable to connect to host %s, port %d (name=%s)\n",
 			   __FILE__, __LINE__, inet_ntoa( sockaddr.sin_addr ), info->sin_port, name );
 			close( info->send_sockfd );
+			pthread_mutex_destroy(&info->send_mutex);
 			free(info);
 			return NULL;
 		}
@@ -1175,7 +1162,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 		list_connect = (list_connect_t *)
 		   realloc( list_connect, sizeof( list_connect_t ) * ( nb_list_connect + 1 ) );
 		nb_list_connect++;
-		strcpy( list_connect[nb_list_connect - 1].name, name );
+		strncpy( list_connect[nb_list_connect - 1].name, name , sizeof(list_connect[nb_list_connect - 1].name));
 		list_connect[nb_list_connect - 1].info = info;
 	}							// else
 
@@ -1194,7 +1181,7 @@ messip_channel_connect0( messip_cnx_t * cnx,
 messip_channel_t *
 messip_channel_connect( messip_cnx_t * cnx,
    const char *name,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	messip_channel_t *ret;
 	pthread_mutex_lock(&messip_cnx_mutex);
@@ -1205,7 +1192,7 @@ messip_channel_connect( messip_cnx_t * cnx,
 
 static int
 messip_channel_disconnect0( messip_channel_t * ch,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int status;
 	fd_set ready;
@@ -1234,10 +1221,10 @@ messip_channel_disconnect0( messip_channel_t * ch,
 
 		/*--- Message to send ---*/
 		datasend.flag = MESSIP_FLAG_DISCONNECTING;
-		datasend.pid = getpid(  );
+		datasend.pid = htonl(getpid(  ));
 		datasend.tid = pthread_self(  );
-		datasend.type = -1;
-		datasend.subtype = -1;
+		datasend.type = htonl(-1);
+		datasend.subtype = htonl(-1);
 		datasend.datalen = 0;
 
 		/*--- Send a message to the 'server' ---*/
@@ -1273,13 +1260,13 @@ messip_channel_disconnect0( messip_channel_t * ch,
 	}							// if
 
 	/*--- Send a message to the messip_mgr ---*/
-	op = messip_int_little_endian( MESSIP_OP_CHANNEL_DISCONNECT );
+	op = htonl( MESSIP_OP_CHANNEL_DISCONNECT );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
 	msgsend.pid = getpid(  );
 	msgsend.tid = pthread_self(  );
-	strcpy( msgsend.name, ch->name );
+	strncpy( msgsend.name, ch->name, sizeof(msgsend.name) );
 	iovec[1].iov_base = &msgsend;
 	iovec[1].iov_len  = sizeof( msgsend );
 	status = messip_writev( ch->cnx->sockfd, iovec, 2 );
@@ -1374,7 +1361,7 @@ messip_channel_disconnect0( messip_channel_t * ch,
 
 int
 messip_channel_disconnect( messip_channel_t * ch,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int ret;
 	pthread_mutex_lock(&messip_cnx_mutex);
@@ -1386,7 +1373,7 @@ messip_channel_disconnect( messip_channel_t * ch,
 
 int
 messip_channel_ping( messip_channel_t * ch,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	messip_datasend_t datasend;
@@ -1411,10 +1398,10 @@ messip_channel_ping( messip_channel_t * ch,
 
 	/*--- Message to send ---*/
 	datasend.flag = MESSIP_FLAG_PING;
-	datasend.pid = getpid(  );
+	datasend.pid = htonl(getpid(  ));
 	datasend.tid = pthread_self(  );
-	datasend.type = -1;
-	datasend.subtype = -1;
+	datasend.type = htonl(-1);
+	datasend.subtype = htonl(-1);
 	datasend.datalen = 0;
 
 	/*--- Send a message to the 'server' ---*/
@@ -1466,7 +1453,7 @@ messip_channel_ping( messip_channel_t * ch,
 static int
 ping_reply( messip_channel_t * ch,
    int index,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	struct iovec iovec[1];
@@ -1479,7 +1466,7 @@ ping_reply( messip_channel_t * ch,
 	datareply.pid = getpid(  );
 	datareply.tid = pthread_self(  );
 	datareply.datalen = 0;
-	datareply.answer = -1;
+	datareply.answer = htonl(-1);
 
 	/*--- Timeout to write ? ---*/
 	if ( msec_timeout != MESSIP_NOTIMEOUT )
@@ -1510,7 +1497,7 @@ ping_reply( messip_channel_t * ch,
 
 static int
 reply_to_thread_client_send_buffered_msg( int sockfd,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	struct iovec iovec[1];
@@ -1522,8 +1509,8 @@ reply_to_thread_client_send_buffered_msg( int sockfd,
 	/*--- Message to reply back ---*/
 	datareply.pid = getpid(  );
 	datareply.tid = pthread_self(  );
-	datareply.datalen = -1;
-	datareply.answer  = -1;
+	datareply.datalen = htonl(-1);
+	datareply.answer  = htonl(-1);
 
 	/*--- Timeout to write ? ---*/
 	if ( msec_timeout != MESSIP_NOTIMEOUT )
@@ -1582,7 +1569,7 @@ messip_send_inform_messipmgr( messip_channel_t * ch,
 	}
 
 	/*--- Send a message to the server ---*/
-	op = messip_int_little_endian( MESSIP_DEBUG_OP_INFORM_STATE );
+	op = htonl( MESSIP_DEBUG_OP_INFORM_STATE );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len  = sizeof( int32_t );
 	msgsend.pid = getpid(  );
@@ -1619,7 +1606,7 @@ messip_receive( messip_channel_t * ch,
    int32_t * subtype,
    void *rec_buffer,
    int32_t maxlen,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	struct iovec iovec[2];
@@ -1890,9 +1877,9 @@ messip_receive( messip_channel_t * ch,
 //		goto restart;
 		return MESSIP_MSG_DISCONNECT;
 	}
-	if ( dcount == -1 )
+	if ( dcount == -1 && dcount != sizeof( datasend ))
 	{
-		fprintf( stderr, "messip_receive) %s %d\n\tdcount=%d  errno=%d\n",
+		fprintf( stderr, "(messip_receive) %s %d\n\tdcount=%zd  errno=%d\n",
 		   __FILE__, __LINE__, dcount, errno );
 		ch->new_sockfd[index] = new_sockfd;
 		return -1;
@@ -1906,7 +1893,7 @@ messip_receive( messip_channel_t * ch,
 //		  dcount, datasend.state, datasend.datalen, datasend.flag );
 
 	/*--- If message was a channel-disconnect, nothing additional to read ---*/
-	ch->remote_pid = datasend.pid;
+	ch->remote_pid = ntohl(datasend.pid);
 	ch->remote_tid = datasend.tid;
 	if ( datasend.flag == MESSIP_FLAG_DISCONNECTING )
 	{
@@ -1927,14 +1914,14 @@ messip_receive( messip_channel_t * ch,
 	}							// if
 	if ( datasend.flag == MESSIP_FLAG_DEATH_PROCESS )
 	{
-		*type    = datasend.pid;
+		*type    = ntohl(datasend.pid);
 		*subtype = (int)datasend.tid;
 		ch->new_sockfd[index] = -1;
 		return MESSIP_MSG_DEATH_PROCESS;
 	}							// if
 
-	*type = datasend.type;
-	*subtype = datasend.subtype;
+	*type = ntohl(datasend.type);
+	*subtype = ntohl(datasend.subtype);
 
 	/*--- If message was a timer, nothing additional to read ---*/
 	if ( datasend.flag == MESSIP_FLAG_TIMER )
@@ -1953,26 +1940,26 @@ messip_receive( messip_channel_t * ch,
 	}
 
 	/*--- Dynamic allocation asked ? ---*/
-	ch->datalen  = datasend.datalen;
+	ch->datalen  = ntohl(datasend.datalen);
 	ch->datalenr = 0;
 	iovec[0].iov_base = &len;
 	iovec[0].iov_len  = sizeof( uint32_t );
 	if ( ( rec_buffer != NULL ) && ( maxlen == 0 ) )
 	{
-		rbuff = malloc( datasend.datalen );
+		rbuff = malloc( ch->datalen );
 		if ( rbuff == NULL )
 		{
 			ch->new_sockfd[index] = -1;
 			errno = ENOMEM;
 			return MESSIP_NOK;
 		}
-		len_to_read = datasend.datalen;
+		len_to_read = ch->datalen;
 		iovec[1].iov_base = rbuff;
 		iovec[1].iov_len  = len_to_read;
 	}
 	else
 	{
-		len_to_read = ( maxlen < datasend.datalen ) ? maxlen : datasend.datalen;
+		len_to_read = ( maxlen < ch->datalen ) ? maxlen : ch->datalen;
 		iovec[1].iov_base = rec_buffer;
 		iovec[1].iov_len  = len_to_read;
 	}
@@ -2005,8 +1992,12 @@ messip_receive( messip_channel_t * ch,
 		ch->new_sockfd[index] = new_sockfd;
 		return -1;
 	}
-	assert( dcount == (ssize_t) (sizeof( uint32_t ) + len_to_read) );
-	ch->datalenr = len_to_read;
+	if(dcount != (ssize_t) (sizeof( uint32_t ) + len_to_read)) {
+		// Warn if the packet has been fragmented by the TCP/IP stack
+		fprintf(stderr, "received IP packet fragmented: %zd of %zd bytes\n", dcount, (ssize_t) (sizeof( uint32_t ) + len_to_read));
+	}
+	assert( dcount >= sizeof( uint32_t ) );
+	ch->datalenr = dcount - sizeof(uint32_t);
 
 	/*
 		Allocate a temp buffer to hold the whole message - used by Msgread()
@@ -2014,9 +2005,9 @@ messip_receive( messip_channel_t * ch,
 	*/
 	if ( datasend.flag == MESSIP_FLAG_BUFFERED )
 	{
-		ch->receive_allmsg[ index ] = malloc( datasend.datalen );
-		ch->receive_allmsg_sz[ index ] = datasend.datalen;
-		assert( len_to_read <= datasend.datalen );
+		ch->receive_allmsg[ index ] = malloc( ch->datalen );
+		ch->receive_allmsg_sz[ index ] = ch->datalen;
+		assert( len_to_read <= ch->datalen );
 		memmove( ch->receive_allmsg[ index ], rec_buffer, len_to_read );
 	}
 	else
@@ -2026,12 +2017,38 @@ messip_receive( messip_channel_t * ch,
 	}
 
 	/*
+		Read more data? (if the packet if bigger than MTU)
+	*/
+	while(ch->datalenr < ch->datalen) {
+		FD_ZERO( &ready );
+		FD_SET( new_sockfd, &ready );
+		do {
+			status = select( new_sockfd+1, &ready, NULL, NULL, NULL );
+		} while ( (status == -1) && (errno == EINTR) );
+		assert(status != -1);
+		assert(FD_ISSET(new_sockfd, &ready));
+		iovec[0].iov_base = rec_buffer + ch->datalenr;
+		iovec[0].iov_len  = len_to_read - ch->datalenr;
+		dcount = messip_readv( new_sockfd, iovec, 1 );
+		if ( ( dcount == 0 ) || ( ( dcount == -1 ) && ( errno == ECONNRESET ) ) )
+		{
+			shutdown( ch->recv_sockfd[n], SHUT_RDWR );
+			close( ch->recv_sockfd[n] );
+			for ( k = n + 1; k < ch->recv_sockfd_sz; k++ )
+				ch->recv_sockfd[k - 1] = ch->recv_sockfd[k];
+			ch->recv_sockfd_sz--;
+			goto restart;
+		}
+		ch->datalenr += dcount;
+	}
+
+	/*
 		Read more data ? (provided buffer was too small)
 	*/
 //	logg( NULL, "+++ datalen=%d maxlen=%d\n", datasend.datalen, maxlen );
-	if ( (rec_buffer != NULL) && (maxlen != 0) && (maxlen < datasend.datalen) )
+	if ( (rec_buffer != NULL) && (maxlen != 0) && (maxlen < ch->datalen) )
 	{
-
+		assert(0); // PT: I am not sure about this code.
 		/*--- Now read the message, unless if it's a timer ---*/
 		char *t = (char *)ch->receive_allmsg[ index ];
 		iovec[0].iov_base = &t[ len_to_read ];
@@ -2048,7 +2065,6 @@ messip_receive( messip_channel_t * ch,
 //			  dcount, len_to_read );
 		assert( dcount == len_to_read );
 		ch->datalenr += len_to_read;
-
 	}
 
 	/*--- Dynamic allocation ? ---*/
@@ -2104,7 +2120,7 @@ messip_send0( messip_channel_t *ch,
    int32_t * answer,
    void *reply_buffer,
    int reply_maxlen,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	messip_datasend_t datasend;
@@ -2115,7 +2131,8 @@ messip_send0( messip_channel_t *ch,
 	int status;
 	uint32_t len;
 	int len_to_read;
-	void *rbuff = NULL;
+	size_t datalenr;
+	void *rbuff;
 
 #ifdef MESSIP_INFORM_STATE
 printf( " 2) %d\n", MESSIP_STATE_SEND_BLOCKED );
@@ -2163,11 +2180,11 @@ printf( " 2) %d\n", MESSIP_STATE_SEND_BLOCKED );
 	/*--- Message to send ---*/
 	memset(&datasend, 0, sizeof(datasend));
 	datasend.flag = (reply_maxlen < 0) ? MESSIP_FLAG_1WAY_MESSAGE : 0;
-	datasend.pid = getpid(  );
+	datasend.pid = htonl(getpid(  ));
 	datasend.tid = pthread_self(  );
-	datasend.type = type;
-	datasend.subtype = subtype;
-	datasend.datalen = send_len;
+	datasend.type = htonl(type);
+	datasend.subtype = htonl(subtype);
+	datasend.datalen = htonl(send_len);
 
 	/*--- (S1) Send a message to the 'server' ---*/
 	iovec[0].iov_base = &datasend;
@@ -2224,26 +2241,41 @@ printf( " 2) %d\n", MESSIP_STATE_SEND_BLOCKED );
 			fprintf( stderr, "%s %d:\n\terrno=%d\n", __FILE__, __LINE__, errno );
 		return -1;
 	}
-	*answer = datareply.answer;
+	// Check if complete header has been received
+	assert(dcount == sizeof( datareply ));
+	*answer = ntohl(datareply.answer);
 
+	// Convert inplace from network-byte order
+	datareply.datalen = ntohl(datareply.datalen);
 	/*--- (S3) Read now the reply, if there is one ---*/
 //	logg( NULL, "--- datalen=%d maxlen=%d\n", datareply.datalen, reply_maxlen );
 	if ( (reply_buffer != NULL) && (reply_maxlen == 0) && (datareply.datalen > 0) )
 	{
 		len_to_read = datareply.datalen;
 		rbuff = malloc( datareply.datalen );
-		iovec[0].iov_base = rbuff;
-		iovec[0].iov_len  = len_to_read;
+		assert(rbuff);
 	}
 	else
 	{
 		len_to_read =
 		   ( datareply.datalen < reply_maxlen ) ? datareply.datalen : reply_maxlen;
-		iovec[0].iov_base = reply_buffer;
-		iovec[0].iov_len  = len_to_read;
+		rbuff = reply_buffer;
 	}
-	if ( len_to_read > 0 )
-	{
+
+	/*
+	 * Loop reading data; requred if packet bigger than MTU is fragmented
+	 */
+	datalenr = 0;
+	while(datalenr < len_to_read) {
+		FD_ZERO( &ready );
+		FD_SET( ch->send_sockfd, &ready );
+		status = select( ch->send_sockfd+1, &ready, NULL, NULL, NULL );
+		assert( status != -1 );
+		assert( FD_ISSET(ch->send_sockfd, &ready));
+
+		iovec[0].iov_base = rbuff+datalenr;
+		iovec[0].iov_len  = len_to_read-datalenr;
+
 		dcount = messip_readv( ch->send_sockfd, iovec, 1 );
 		LIBTRACE( ( "@messip_send: recvmsg dcount=%d local_fd=%d [errno=%d]\n",
 			  dcount, ch->send_sockfd, errno ) );
@@ -2258,7 +2290,11 @@ printf( " 2) %d\n", MESSIP_STATE_SEND_BLOCKED );
 			fprintf( stderr, "%s %d:\n\terrno=%d\n", __FILE__, __LINE__, errno );
 			return -1;
 		}
-	}							// if
+		datalenr += dcount;
+		if(datalenr < len_to_read) {
+			fprintf(stderr, "replied IP packet fragmented: %zd of %zd bytes\n", datalenr, (ssize_t) (sizeof( datareply ) + len_to_read));
+		}
+	}
 
 	if ( len_to_read < datareply.datalen )
 	{
@@ -2289,7 +2325,6 @@ printf( " 2) %d\n", MESSIP_STATE_SEND_BLOCKED );
 	ch->remote_pid = datareply.pid;
 	ch->remote_tid = datareply.tid;
 	return 0;
-
 }								// messip_send
 
 int
@@ -2301,7 +2336,7 @@ messip_send( messip_channel_t *ch,
    int32_t * answer,
    void *reply_buffer,
    int reply_maxlen,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	int ret;
 	pthread_mutex_lock(&ch->send_mutex);
@@ -2316,7 +2351,7 @@ messip_buffered_send( messip_channel_t * ch,
    int32_t subtype,
    void *send_buffer,
    int send_len,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	fd_set ready;
@@ -2341,7 +2376,7 @@ messip_buffered_send( messip_channel_t * ch,
 	}
 
 	/*--- Send a service message to the server + the private message ---*/
-	op = messip_int_little_endian( MESSIP_OP_BUFFERED_SEND );
+	op = htonl( MESSIP_OP_BUFFERED_SEND );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len  = sizeof( int32_t );
 	msgsend.pid_from  = getpid(  );
@@ -2395,7 +2430,7 @@ messip_reply( messip_channel_t * ch,
    int32_t answer,
    const void *reply_buffer,
    int reply_len,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	struct iovec iovec[2];
@@ -2403,7 +2438,7 @@ messip_reply( messip_channel_t * ch,
 	fd_set ready;
 	struct timeval tv;
 	int ret;
-	int status, sz;
+	int status;
 
 	if ( ( index < 0 ) || ( index > ch->nb_replies_pending ) )
 		return -1;
@@ -2430,8 +2465,8 @@ messip_reply( messip_channel_t * ch,
 			//	logg( NULL, "messip_reply:  pthread_self=%d\n", pthread_self() );
 			datareply.pid = getpid(  );
 			datareply.tid = pthread_self(  );
-			datareply.datalen = reply_len;
-			datareply.answer  = answer;
+			datareply.datalen = htonl(reply_len);
+			datareply.answer  = htonl(answer);
 
 			/*--- Timeout to write ? ---*/
 			if ( msec_timeout != MESSIP_NOTIMEOUT )
@@ -2447,15 +2482,14 @@ messip_reply( messip_channel_t * ch,
 			}
 
 			/*--- Now wait for an answer from the server ---*/
-			sz = 0;
-			iovec[sz].iov_base  = &datareply;
-			iovec[sz++].iov_len = sizeof( messip_datareply_t );
+			iovec[0].iov_base  = &datareply;
+			iovec[0].iov_len = sizeof( messip_datareply_t );
 			if ( reply_len > 0 )
 			{
-				iovec[sz].iov_base  = (void *) reply_buffer;
-				iovec[sz++].iov_len = reply_len;
+				iovec[1].iov_base  = (void *) reply_buffer;
+				iovec[1].iov_len = reply_len;
 			}
-			dcount = messip_writev( ch->new_sockfd[index], iovec, sz );
+			dcount = messip_writev( ch->new_sockfd[index], iovec, 2 );
 			LIBTRACE( ( "@messip_reply: sendmsg: dcount=%d  index=%d new_sockfd=%d errno=%d\n",
 				  dcount, index, ch->new_sockfd[index], errno ) );
 			assert( dcount == (ssize_t) ( sizeof( messip_datareply_t ) + reply_len ) );
@@ -2498,7 +2532,7 @@ messip_reply( messip_channel_t * ch,
 }								// messip_reply
 
 
-#if !defined(__FreeBSD__) && !defined(__APPLE__) && !defined(__MACH__)
+#if !defined(__FreeBSD__) && !(__APPLE__ & __MACH__)
 
 typedef struct
 {
@@ -2516,7 +2550,7 @@ static int
 messip_timer_send( messip_channel_t * ch,
    int32_t type,
    int32_t subtype,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	messip_datasend_t datasend;
@@ -2608,7 +2642,7 @@ timer_t messip_timer_create( messip_channel_t * ch,
    int32_t subtype,
    int32_t msec_1st_shot,
    int32_t msec_rep_shot,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	messip_timer_t *timer_info;
 	struct sigevent event;
@@ -2642,11 +2676,11 @@ timer_t messip_timer_create( messip_channel_t * ch,
 	sigaddset( &sig_act.sa_mask, SIGHUP );
 	sigaddset( &sig_act.sa_mask, SIGCHLD );
 	sigaddset( &sig_act.sa_mask, SIGRTMIN+1 );
-    sig_act.sa_flags = SA_SIGINFO;
-    sig_act.sa_sigaction = sig_action;
-    sigaction( SIGRTMIN, 		  		/* Set action for SIGRTMIN      */
-        &sig_act,                 		/* Action to take on signal     */
-        0 );                      		/* Don't care about old actions */
+	sig_act.sa_flags = SA_SIGINFO;
+	sig_act.sa_sigaction = sig_action;
+	sigaction( SIGRTMIN, 		  		/* Set action for SIGRTMIN      */
+		&sig_act,                 		/* Action to take on signal     */
+		0 );                      		/* Don't care about old actions */
 #endif
 
 	itime.it_value.tv_sec = msec_1st_shot / 1000;
@@ -2665,7 +2699,7 @@ timer_t messip_timer_create( messip_channel_t * ch,
 int32_t
 messip_death_notify( messip_cnx_t *cnx,
    int status,
-   int32_t msec_timeout )
+   int msec_timeout )
 {
 	ssize_t dcount;
 	fd_set ready;
@@ -2690,7 +2724,7 @@ messip_death_notify( messip_cnx_t *cnx,
 	}
 
 	/*--- Send a service message to the server + the private message ---*/
-	op = messip_int_little_endian( MESSIP_OP_DEATH_NOTIFY );
+	op = htonl( MESSIP_OP_DEATH_NOTIFY );
 	iovec[0].iov_base = &op;
 	iovec[0].iov_len = sizeof( int32_t );
 	memset(&msgsend, 0, sizeof(msgsend));
@@ -2781,7 +2815,7 @@ int messip_dispatch_attach(messip_dispatch_t *dpp,
 	return dpp->nb_handlers++;
 }
 
-int messip_dispatch_block(messip_dispatch_t *dpp, int32_t msec_timeout) {
+int messip_dispatch_block(messip_dispatch_t *dpp, int msec_timeout) {
 	int i, n; // iterators
 	int maxfd = 0; // maximum filedescriptor number
 

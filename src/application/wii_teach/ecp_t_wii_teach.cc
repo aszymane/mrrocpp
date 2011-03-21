@@ -16,18 +16,19 @@
 #include "base/lib/mrmath/mrmath.h"
 #include "ecp_t_wii_teach.h"
 
-#if defined(USE_MESSIP_SRR)
+
 #include "base/lib/messip/messip_dataport.h"
-#endif
+
 
 namespace mrrocpp {
 namespace ecp {
 namespace irp6ot_m {
 namespace task {
 
-wii_teach::wii_teach(lib::configurator &_config) : task(_config)
+wii_teach::wii_teach(lib::configurator &_config) :
+	common::task::task(_config)
 {
-	ecp_m_robot = new robot(*this);
+	ecp_m_robot = (boost::shared_ptr<robot_t>) new robot(*this);
 	trajectory.count = trajectory.position = 0;
 	trajectory.head = trajectory.tail = trajectory.current = NULL;
 
@@ -138,12 +139,9 @@ bool wii_teach::get_filenames(void)
 	strcpy(ecp_to_ui_msg.string, "*.trj"); // Wzorzec nazwy pliku
 	
 	// if ( Send (UI_pid, &ecp_to_ui_msg, &ui_to_ecp_rep, sizeof(lib::ECP_message), sizeof(lib::UI_reply)) == -1) {
-#if !defined(USE_MESSIP_SRR)
-	ecp_to_ui_msg.hdr.type = 0;
-	if (MsgSend(this->UI_fd, &ecp_to_ui_msg, sizeof(lib::ECP_message), &ui_to_ecp_rep, sizeof(lib::UI_reply)) < 0)
-#else
+
 	if(messip::port_send(this->UI_fd, 0, 0, ecp_to_ui_msg, ui_to_ecp_rep) < 0) // by Y&W
-#endif
+
 	{
 		e = errno;
 		perror("ecp: Send() to UI failed");
@@ -179,14 +177,8 @@ void wii_teach::save_trajectory(void)
 
 	node* current = trajectory.head;
 	
-	if(pose_spec == lib::ECP_JOINT)
-	{
-		to_file << "JOINT" << '\n';
-	}
-	else
-	{
-		to_file << "XYZ_ANGLE_AXIS" << '\n';
-	}
+	to_file << type << '\n';
+	
 	to_file << trajectory.count << '\n';
 	
 	to_file << "ABSOLUTE" << '\n' << '\n';
@@ -267,7 +259,7 @@ void wii_teach::move_to_prev(void)
 void wii_teach::handleHome(void)
 {
 	buttonsPressed.buttonHome = 0;
-	if (trajectory.position > 0) 
+	if (trajectory.count && trajectory.position > 0) 
 	{
 		trajectory.current->position = gg->get_position_vector();
 
@@ -421,6 +413,8 @@ void wii_teach::handlePlus(void)
 	current->id = ++cnt;
 
 	current->position = gg->get_position_vector();
+	
+	if(!current->position.size()) return;
 
 	if (trajectory.current) 
 	{
@@ -554,6 +548,7 @@ void wii_teach::main_task_algorithm(void)
 	acceleration = "0.1 0.1 0.1 0.1 0.1 0.1 0.1";
 	mode = "ABSOLUTE";
 	type = "XYZ_ANGLE_AXIS";
+	pose_spec = lib::ECP_XYZ_ANGLE_AXIS;
 
 	ecp_mp::sensor::wiimote * wii = dynamic_cast <ecp_mp::sensor::wiimote *> (sensor_m[ecp_mp::sensor::SENSOR_WIIMOTE]);
 
@@ -582,11 +577,12 @@ void wii_teach::main_task_algorithm(void)
 	{
 		response = choose_option("Pose specification: [1] Angle Axis, [2] Joint", 2);
 	}
-	
+
 	switch(response)
 	{
-		case 2:
+		case lib::OPTION_TWO:
 			pose_spec = lib::ECP_JOINT;
+			type = "JOINT";
 			axis_num = 7;
 			break;
 		default:
@@ -679,7 +675,7 @@ void wii_teach::main_task_algorithm(void)
 namespace common {
 namespace task {
 
-task* return_created_ecp_task(lib::configurator &_config)
+task_base* return_created_ecp_task(lib::configurator &_config)
 {
 	return new irp6ot_m::task::wii_teach(_config);
 }

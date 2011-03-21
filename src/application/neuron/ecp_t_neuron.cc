@@ -21,25 +21,26 @@ namespace task {
  * @brief Constructor along with appropriate configuration.
  * @param _config Configuration object reference.
  */
-Neuron::Neuron(lib::configurator &_config): task(_config){
-	ecp_m_robot=new irp6ot_m::robot(*this);				//initialization of robot
+Neuron::Neuron(lib::configurator &_config) :
+	common::task::task(_config)
+{
+	ecp_m_robot= (boost::shared_ptr<robot_t>) new irp6ot_m::robot(*this); //initialization of robot
 	smoothGenerator=new common::generator::newsmooth(*this, lib::ECP_XYZ_ANGLE_AXIS, 6);
 	sr_ecp_msg->message("ECP loaded Neuron");
-};
+}
 
 /*============================Destructor==================================*//**
  * @brief Destructor.
  * @details Cleans it own shit.
  */
 Neuron::~Neuron(){
-	delete ecp_m_robot;
 	delete neuronGenerator;
 	delete smoothGenerator;
-};
+}
 
 /*====================mp_2_ecp_next_state_string_handler==================*//**
  * @brief Method called from main_task_algorithm to handle next_state command.
- * @details Method that handles main algorithm and informatin flow for Neuron
+ * @details Method that handles main algorithm and information flow for Neuron
  * task. Starts generators and waits for start and stop signal from VSP.
  */
 void Neuron::mp_2_ecp_next_state_string_handler(void){
@@ -67,10 +68,13 @@ void Neuron::mp_2_ecp_next_state_string_handler(void){
 				//Obtain first coordinates from VSP for smooth generator.
 				coordinates=neuronSensor->getFirstCoordinates();
 
+				printf("coordinates received: %f %f %f\n",coordinates.x, coordinates.y, coordinates.z);
+
 				smoothGenerator->reset();
 				smoothGenerator->set_absolute();
 
 				//set coordinates for smooth generator.
+
 				coordinates1[0]=coordinates.x;
 				coordinates1[1]=coordinates.y;
 				coordinates1[2]=coordinates.z;
@@ -94,9 +98,9 @@ void Neuron::mp_2_ecp_next_state_string_handler(void){
 				if(neuronSensor->stop())
 					break;
 
-				double * finalPosition;
-				finalPosition=neuronGenerator->get_position();
-				neuronSensor->sendFinalPosition(finalPosition[0], finalPosition[1], finalPosition[2]);
+				double overshoot;
+				overshoot=neuronGenerator->get_overshoot();
+				neuronSensor->sendOvershoot(overshoot);
 			}
 		}
 
@@ -130,7 +134,7 @@ namespace task {
 * @param _config configurator object reference.
 * @return inherited task pointer.
 */
-task* return_created_ecp_task(lib::configurator &_config){
+task_base* return_created_ecp_task(lib::configurator &_config){
 	return new irp6ot::task::Neuron(_config);
 }
 

@@ -13,6 +13,9 @@
 #include <cstdio>
 #include <cmath>
 
+// for MacOS compatibility, where isnan() is implemented as a function in the std:: namespace
+using std::isnan;
+
 #include "base/lib/com_buf.h"
 #include "robot/irp6p_m/kinematic_model_irp6p_with_wrist.h"
 
@@ -262,7 +265,7 @@ void model_with_wrist::set_kinematic_parameters(void)
 } //: set_kinematic_parameters
 
 
-void model_with_wrist::check_motor_position(const lib::MotorArray & motor_position)
+void model_with_wrist::check_motor_position(const lib::MotorArray & motor_position) const
 {
 
 	if (motor_position[0] < lower_limit_axis[0]) // Kat f1 mniejszy od minimalnego
@@ -304,9 +307,8 @@ void model_with_wrist::check_motor_position(const lib::MotorArray & motor_positi
 } //: check_motor_position
 
 
-void model_with_wrist::check_joints(const lib::JointArray & q)
+void model_with_wrist::check_joints(const lib::JointArray & q) const
 {
-
 	if (isnan(q[0]))
 		throw NonFatal_error_2(NOT_A_NUMBER_JOINT_VALUE_THETA1);
 

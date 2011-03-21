@@ -19,7 +19,7 @@ namespace spkm {
  * @brief SwarmItFix arallel Kinematic Machine total number of servos
  * @ingroup spkm
  */
-const int NUM_OF_SERVOS = 7;
+const int NUM_OF_SERVOS = 6;
 
 /*!
  * @brief SwarmItFix arallel Kinematic Machine mp to ecp command
@@ -30,8 +30,6 @@ struct mp_to_ecp_parameters
 	epos::EPOS_GEN_PROFILE motion_type;
 	epos::mp_to_ecp_cubic_trapezoidal_parameters cubic_trapezoidal[NUM_OF_SERVOS];
 	lib::frame_tab goal_frame;
-	double m;
-	double tau;
 	bool guarded_move_manipulator;
 };
 

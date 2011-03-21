@@ -26,9 +26,9 @@ Examples:
 #endif
 
 /* Standard headers */
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 /* Local headers */
@@ -77,7 +77,6 @@ static const ApClassTab_t ClassTable[] = {
 	{ "PtToolbar", &PtToolbar },
 	{ "PtMenuButton", &PtMenuButton },
 	{ "PtMultiText", &PtMultiText },
-	{ "PtComboBox", &PtComboBox },
 	{ "PtFileSel", &PtFileSel },
 	{ "PtToggleButton", &PtToggleButton },
 	{ "PtGroup", &PtGroup },

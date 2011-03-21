@@ -1,12 +1,8 @@
 // ------------------------------------------------------------------------
 // Proces:		EDP
-// Plik:			edp_irp6s_and_conv.cc
-// System:	QNX/MRROC++  v. 6.3
 // Opis:		Metody wspolne dla robotow IRp-6 oraz tasmociagu
 // 				- definicja metod klasy edp_irp6s_and_conv_effector
 //
-// Autor:		tkornuta
-// Data:		14.01.2007
 // -------------------------------------------------------------------------
 
 #include <cstdio>
@@ -24,11 +20,11 @@
 #include <pthread.h>
 #ifdef __QNXNTO__
 #include <sys/neutrino.h>
-#include <sys/netmgr.h>
 #endif
 
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "base/lib/typedefs.h"
 #include "base/lib/impconst.h"
@@ -53,7 +49,6 @@ servo_buffer * motor_driven_effector::return_created_servo_buffer()
 	return NULL;
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::get_arm_position_read_hardware_sb()
 { // odczytanie pozycji ramienia
 
@@ -61,7 +56,7 @@ void motor_driven_effector::get_arm_position_read_hardware_sb()
 	lib::JointArray desired_joints_tmp(number_of_servos); // Wspolrzedne wewnetrzne -
 
 	// Uformowanie rozkazu odczytu dla SERVO_GROUP
-	sb->servo_command.instruction_code = lib::READ;
+	sb->servo_command.instruction_code = READ;
 	// Wyslanie rozkazu do SERVO_GROUP
 	// Pobranie z SERVO_GROUP aktualnej pozycji silnikow
 	//		printf("get_arm_position read_hardware\n");
@@ -87,7 +82,6 @@ void motor_driven_effector::get_arm_position_read_hardware_sb()
 	 */
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::get_arm_position_get_arm_type_switch(lib::c_buffer &instruction)
 { // odczytanie pozycji ramienia
 
@@ -100,13 +94,13 @@ void motor_driven_effector::get_arm_position_get_arm_type_switch(lib::c_buffer &
 			// Przepisanie definicji koncowki danej w postaci
 			// JOINTS z wewntrznych struktur danych TRANSFORMATORa
 			// do wewntrznych struktur danych REPLY_BUFFER
-			reply.arm_type = lib::JOINT;
+			reply.arm.type = lib::JOINT;
 			for (int i = 0; i < number_of_servos; i++) {
 				reply.arm.pf_def.arm_coordinates[i] = current_joints[i];
 			}
 			break;
 		case lib::MOTOR:
-			reply.arm_type = lib::MOTOR;
+			reply.arm.type = lib::MOTOR;
 			for (int i = 0; i < number_of_servos; i++) {
 				reply.arm.pf_def.arm_coordinates[i] = current_motor_pos[i];
 			}
@@ -118,7 +112,6 @@ void motor_driven_effector::get_arm_position_get_arm_type_switch(lib::c_buffer &
 
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::single_thread_move_arm(const lib::c_buffer &instruction)
 { // przemieszczenie ramienia
 	// Wypenienie struktury danych transformera na podstawie parametrow polecenia
@@ -140,14 +133,11 @@ void motor_driven_effector::single_thread_move_arm(const lib::c_buffer &instruct
 	}
 
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::multi_thread_move_arm(const lib::c_buffer &instruction)
 { // przemieszczenie ramienia
 	// Wypenienie struktury danych transformera na podstawie parametrow polecenia
 	// otrzymanego z ECP. Zlecenie transformerowi przeliczenie wspolrzednych
-
 
 	switch (instruction.set_arm_type)
 	{
@@ -166,7 +156,6 @@ void motor_driven_effector::multi_thread_move_arm(const lib::c_buffer &instructi
 	}
 
 }
-/*--------------------------------------------------------------------------*/
 
 void motor_driven_effector::single_thread_master_order(common::MT_ORDER nm_task, int nm_tryb)
 {
@@ -202,7 +191,6 @@ void motor_driven_effector::multi_thread_master_order(MT_ORDER nm_task, int nm_t
 	mt_tt_obj->master_to_trans_t_order(nm_task, nm_tryb, instruction);
 }
 
-/*--------------------------------------------------------------------------*/
 motor_driven_effector::motor_driven_effector(lib::configurator &_config, lib::robot_name_t l_robot_name) :
 	effector(_config, l_robot_name), servo_current_motor_pos(lib::MAX_SERVOS_NR),
 	servo_current_joints(lib::MAX_SERVOS_NR), desired_joints(lib::MAX_SERVOS_NR), current_joints(lib::MAX_SERVOS_NR),
@@ -234,7 +222,7 @@ motor_driven_effector::~motor_driven_effector()
 
 void motor_driven_effector::master_joints_read(double output[])
 {
-	boost::mutex::scoped_lock lock(edp_irp6s_effector_mutex);
+	boost::mutex::scoped_lock lock(effector_mutex);
 
 	// przepisanie danych na zestaw lokalny dla edp_master
 	for (int i = 0; i < number_of_servos; i++) {
@@ -242,12 +230,10 @@ void motor_driven_effector::master_joints_read(double output[])
 	}
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::hi_create_threads()
 {
 	rb_obj = (boost::shared_ptr<reader_buffer>) new reader_buffer(*this);
 	mt_tt_obj = (boost::shared_ptr<manip_trans_t>) new manip_trans_t(*this);
-	in_out_obj = (boost::shared_ptr<in_out_buffer>) new in_out_buffer();
 	vis_obj = (boost::shared_ptr<vis_server>) new vis_server(*this);
 	sb = (boost::shared_ptr<servo_buffer>) return_created_servo_buffer();
 
@@ -283,7 +269,7 @@ bool motor_driven_effector::compute_servo_joints_and_frame(void)
 	// wyznaczenie nowych wartosci joints and frame dla obliczen w servo
 	try {
 		{
-			boost::mutex::scoped_lock lock(edp_irp6s_effector_mutex);
+			boost::mutex::scoped_lock lock(effector_mutex);
 			get_current_kinematic_model()->mp2i_transform(servo_current_motor_pos, servo_current_joints);
 		}
 
@@ -304,7 +290,7 @@ bool motor_driven_effector::compute_servo_joints_and_frame(void)
 	}//: catch
 
 	{
-		boost::mutex::scoped_lock lock(edp_irp6s_effector_mutex);
+		boost::mutex::scoped_lock lock(effector_mutex);
 
 		// przepisnie danych na zestaw globalny
 		for (int i = 0; i < number_of_servos; i++) {
@@ -338,7 +324,6 @@ bool motor_driven_effector::is_synchronised(void) const
 	return controller_state_edp_buf.is_synchronised;
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::interpret_instruction(lib::c_buffer &instruction)
 {
 	//	fprintf(stderr, "instruction:\n");
@@ -346,7 +331,7 @@ void motor_driven_effector::interpret_instruction(lib::c_buffer &instruction)
 	//	fprintf(stderr, "\tget_type: %d\n", instruction.get_type);
 	//	fprintf(stderr, "\tget_robot_model_type: %d\n", instruction.get_robot_model_type);
 	//	fprintf(stderr, "\tset_type: %d\n", instruction.set_type);
-	//	fprintf(stderr, "\tset_robot_model_type: %d\n", instruction.set_robot_model_type);
+	//	fprintf(stderr, "\trobot_model.type: %d\n", instruction.set_robot_model_type);
 
 	// interpretuje otrzymana z ECP instrukcje;
 	// wypelnaia struktury danych TRANSFORMATORa;
@@ -492,19 +477,15 @@ void motor_driven_effector::interpret_instruction(lib::c_buffer &instruction)
 // Synchronizacja robota.
 void motor_driven_effector::synchronise()
 {
-
-#ifdef __QNXNTO__
-	flushall();
-#endif
 	/* Uformowanie rozkazu synchronizacji dla procesu SERVO_GROUP */
-	sb->servo_command.instruction_code = lib::SYNCHRONISE;
+	sb->servo_command.instruction_code = SYNCHRONISE;
 	/* Wyslanie rozkazu synchronizacji do realizacji procesowi SERVO_GROUP */
 	sb->send_to_SERVO_GROUP();
 	controller_state_edp_buf.is_synchronised = true; // Ustawienie flagi zsynchronizowania robota
 
 	// aktualizacja pozycji robota
 	// Uformowanie rozkazu odczytu dla SERVO_GROUP
-	sb->servo_command.instruction_code = lib::READ;
+	sb->servo_command.instruction_code = READ;
 	// Wyslanie rozkazu do SERVO_GROUP
 	// Pobranie z SERVO_GROUP aktualnej pozycji silnikow
 	//	printf("get_arm_position read_hardware\n");
@@ -521,41 +502,30 @@ void motor_driven_effector::synchronise()
 	}
 }
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::set_outputs(const lib::c_buffer &instruction)
 {
 	// ustawienie wyjsc binarnych
-	in_out_obj->set_output(instruction.output_values);
-	// throw NonFatal_error_2(NOT_IMPLEMENTED_YET);
-	// printf(" OUTPUTS SET\n");
+	in_out_obj.set_output(instruction.output_values);
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::get_inputs(lib::r_buffer & local_reply)
 {
 	// odczytanie wejsc binarnych
-	in_out_obj->get_input(&local_reply.input_values, local_reply.analog_input);
-	// throw NonFatal_error_2(NOT_IMPLEMENTED_YET);
-	// printf(" INPUTS GET\n");
+	in_out_obj.get_input(&local_reply.input_values, local_reply.analog_input);
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::get_algorithms()
 {
 	// odczytanie numerow algorytmow i ich numerow zestawow parametrow
 
 	// Uformowanie rozkazu odczytu dla SERVO_GROUP
-	sb->servo_command.instruction_code = lib::READ;
+	sb->servo_command.instruction_code = READ;
 	// Wyslanie rozkazu do SERVO_GROUP
 	// Pobranie z SERVO_GROUP aktualnej pozycji silnikow i numerow algorytmow etc.
 	sb->send_to_SERVO_GROUP();
 
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 lib::REPLY_TYPE motor_driven_effector::rep_type(const lib::c_buffer &instruction)
 {
 	// ustalenie formatu odpowiedzi
@@ -603,9 +573,7 @@ lib::REPLY_TYPE motor_driven_effector::rep_type(const lib::c_buffer &instruction
 
 	return reply.reply_type;
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::compute_motors(const lib::c_buffer &instruction)
 {
 
@@ -661,15 +629,13 @@ void motor_driven_effector::compute_motors(const lib::c_buffer &instruction)
 
 	// printf("P=%lf\n",desired_motor_pos_new[0]);
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::set_robot_model(const lib::c_buffer &instruction)
 {
 	// uint8_t previous_model;
 	// uint8_t previous_corrector;
 	//printf(" SET ROBOT_MODEL: ");
-	switch (instruction.set_robot_model_type)
+	switch (instruction.robot_model.type)
 	{
 		case lib::ARM_KINEMATIC_MODEL:
 			//printf("ARM_KINEMATIC_MODEL\n");
@@ -681,21 +647,19 @@ void motor_driven_effector::set_robot_model(const lib::c_buffer &instruction)
 			throw NonFatal_error_2(INVALID_SET_ROBOT_MODEL_TYPE);
 	}
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::get_robot_model(lib::c_buffer &instruction)
 {
 	//printf(" GET ROBOT_MODEL: ");
 	switch (instruction.get_robot_model_type)
 	{
 		case lib::ARM_KINEMATIC_MODEL:
-			reply.robot_model_type = lib::ARM_KINEMATIC_MODEL;
+			reply.robot_model.type = lib::ARM_KINEMATIC_MODEL;
 			// okreslenie numeru zestawu parametrow przelicznika kinematycznego oraz jego korektora
 			reply.robot_model.kinematic_model.kinematic_model_no = get_current_kinematic_model_no();
 			break;
 		case lib::SERVO_ALGORITHM:
-			reply.robot_model_type = lib::SERVO_ALGORITHM;
+			reply.robot_model.type = lib::SERVO_ALGORITHM;
 			// ustawienie numeru algorytmu serworegulatora oraz numeru jego zestawu parametrow
 
 			break;
@@ -704,9 +668,7 @@ void motor_driven_effector::get_robot_model(lib::c_buffer &instruction)
 			throw NonFatal_error_2(INVALID_GET_ROBOT_MODEL_TYPE);
 	}
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::compute_joints(const lib::c_buffer &instruction)
 {
 	lib::MotorArray desired_motor_pos_new_tmp(number_of_servos);
@@ -746,23 +708,20 @@ void motor_driven_effector::compute_joints(const lib::c_buffer &instruction)
 	}
 
 }
-/*--------------------------------------------------------------------------*/
 
-/*--------------------------------------------------------------------------*/
 void motor_driven_effector::move_servos()
 {
 	/* Wyslanie polecenia ruchu do procesu SERVO_GROUP oraz odebranie wyniku
 	 realizacji pierwszej fazy ruchu */
-	int i;
 
 	/* Uformowanie rozkazu ruchu dla SERVO_GROUP */
-	sb->servo_command.instruction_code = lib::MOVE;
+	sb->servo_command.instruction_code = MOVE;
 	sb->servo_command.parameters.move.number_of_steps = motion_steps;
 	sb->servo_command.parameters.move.return_value_in_step_no = value_in_step_no;
 
 	//		printf("edp_irp6s_and_conv_effector::move_servos: %f, %f\n", desired_motor_pos_new[1], desired_motor_pos_old[1]);
 
-	for (i = 0; i < number_of_servos; i++) {
+	for (int i = 0; i < number_of_servos; i++) {
 		sb->servo_command.parameters.move.macro_step[i] = desired_motor_pos_new[i] - desired_motor_pos_old[i];
 		sb->servo_command.parameters.move.abs_position[i] = desired_motor_pos_new[i]; // by Y
 		//    nowa wartosc zadana staje sie stara
@@ -777,32 +736,26 @@ void motor_driven_effector::move_servos()
 	/* Wyslanie makrokroku do realizacji procesowi SERVO_GROUP */
 	/* Odebranie od procesu SERVO_GROUP informacji o realizacji pierwszej fazy ruchu */
 	sb->send_to_SERVO_GROUP();
-
 }
-/*--------------------------------------------------------------------------*/
 
-void motor_driven_effector::update_servo_current_motor_pos(double motor_position_increment, int i)
+void motor_driven_effector::update_servo_current_motor_pos(double motor_position_increment, size_t i)
 {
 	servo_current_motor_pos[i] += motor_position_increment;
 }
 
-void motor_driven_effector::update_servo_current_motor_pos_abs(double abs_motor_position, int i)
+void motor_driven_effector::update_servo_current_motor_pos_abs(double abs_motor_position, size_t i)
 {
 	servo_current_motor_pos[i] = abs_motor_position;
 }
 
-// sprawdza stan EDP zaraz po jego uruchomieniu
-
-
 void motor_driven_effector::get_controller_state(lib::c_buffer &instruction)
 {
-
 	//printf("get_controller_state: %d\n", controller_state_edp_buf.is_synchronised); fflush(stdout);
 	reply.controller_state = controller_state_edp_buf;
 
 	// aktualizacja pozycji robota
 	// Uformowanie rozkazu odczytu dla SERVO_GROUP
-	sb->servo_command.instruction_code = lib::READ;
+	sb->servo_command.instruction_code = READ;
 	// Wyslanie rozkazu do SERVO_GROUP
 	// Pobranie z SERVO_GROUP aktualnej pozycji silnikow
 	//	printf("get_arm_position read_hardware\n");
@@ -813,10 +766,10 @@ void motor_driven_effector::get_controller_state(lib::c_buffer &instruction)
 	get_current_kinematic_model()->mp2i_transform(current_motor_pos, current_joints);
 
 	{
-		boost::mutex::scoped_lock lock(edp_irp6s_effector_mutex);
+		boost::mutex::scoped_lock lock(effector_mutex);
 
 		// Ustawienie poprzedniej wartosci zadanej na obecnie odczytane polozenie walow silnikow
-		for (int i = 0; i < number_of_servos; i++) {
+		for (size_t i = 0; i < number_of_servos; i++) {
 			servo_current_motor_pos[i] = desired_motor_pos_new[i] = desired_motor_pos_old[i] = current_motor_pos[i];
 			desired_joints[i] = current_joints[i];
 		}
@@ -832,14 +785,14 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 			{
 				case GET_STATE:
 					// wstepna interpretacja nadeslanego polecenia w celu wykrycia nieprawidlowosci
-					switch (receive_instruction())
+					switch (receive_instruction(instruction))
 					{
 						case lib::GET:
 							// potwierdzenie przyjecia polecenia (dla ECP)
 							//            printf("SET_GET\n");
 							reply.reply_type = lib::ACKNOWLEDGE;
 							reply.reply_type = lib::ACKNOWLEDGE;
-							reply_to_instruction();
+							reply_to_instruction(reply);
 
 							if ((rep_type(instruction)) == lib::CONTROLLER_STATE) {
 								// master_order(MT_GET_CONTROLLER_STATE, 0);
@@ -859,9 +812,9 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 					next_state = WAIT;
 					break;
 				case WAIT:
-					if (receive_instruction() == lib::QUERY) { // instrukcja wlasciwa =>
+					if (receive_instruction(instruction) == lib::QUERY) { // instrukcja wlasciwa =>
 						// zle jej wykonanie, czyli wyslij odpowiedz
-						reply_to_instruction();
+						reply_to_instruction(reply);
 					} else { // blad: powinna byla nadejsc instrukcja QUERY
 						throw NonFatal_error_3(QUERY_EXPECTED);
 					}
@@ -895,11 +848,11 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 			// Obsluga bledow nie fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
-			establish_error(nfe.error, OK);
+			establish_error(reply, nfe.error, OK);
 			//  printf("catch NonFatal_error_1\n");
 			// informacja dla ECP o bledzie
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// powrot do stanu: GET_INSTRUCTION
 			next_state = GET_STATE;
 		} // end: catch(transformer::NonFatal_error_1 nfe)
@@ -909,8 +862,8 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
 			//  printf ("catch master thread NonFatal_error_2\n");
-			establish_error(nfe.error, OK);
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			establish_error(reply, nfe.error, OK);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// powrot do stanu: WAIT
 			next_state = WAIT;
 		} // end: catch(transformer::NonFatal_error_2 nfe)
@@ -926,14 +879,14 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 			uint64_t err_no_0 = reply.error_no.error0;
 			uint64_t err_no_1 = reply.error_no.error1;
 
-			establish_error(nfe.error, OK);
+			establish_error(reply, nfe.error, OK);
 			// informacja dla ECP o bledzie
-			reply_to_instruction();
+			reply_to_instruction(reply);
 			// przywrocenie poprzedniej odpowiedzi
 			reply.reply_type = rep_type;
-			establish_error(err_no_0, err_no_1);
+			establish_error(reply, err_no_0, err_no_1);
 			//     printf("ERROR w EDP 3\n");
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// msg->message(lib::NON_FATAL_ERROR, err_no_0, err_no_1); // by Y - oryginalnie
 			// powrot do stanu: GET_INSTRUCTION
 			next_state = GET_STATE;
@@ -944,7 +897,7 @@ void motor_driven_effector::pre_synchro_loop(STATE& next_state)
 			// Obsluga bledow fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu fe
 			// Sa to bledy dotyczace sprzetu oraz QNXa (komunikacji)
-			establish_error(fe.error0, fe.error1);
+			establish_error(reply, fe.error0, fe.error1);
 			msg->message(lib::FATAL_ERROR, fe.error0, fe.error1);
 			// Powrot do stanu: WAIT
 			next_state = WAIT;
@@ -963,13 +916,13 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			{
 				case GET_SYNCHRO:
 					/* Oczekiwanie na zlecenie synchronizacji robota */
-					switch (receive_instruction())
+					switch (receive_instruction(instruction))
 					{
 						case lib::SYNCHRO:
 							// instrukcja wlasciwa => zle jej wykonanie
 							/* Potwierdzenie przyjecia instrukcji synchronizacji do wykonania */
 							reply.reply_type = lib::ACKNOWLEDGE;
-							reply_to_instruction();
+							reply_to_instruction(reply);
 							/* Zlecenie wykonania synchronizacji */
 							master_order(MT_SYNCHRONISE, 0); // by Y przejscie przez watek transfor w celu ujednolicenia
 							// synchronise();
@@ -982,7 +935,7 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 							if (pre_synchro_motion(instruction)) {
 								/* Potwierdzenie przyjecia instrukcji ruchow presynchronizacyjnych do wykonania */
 								reply.reply_type = lib::ACKNOWLEDGE;
-								reply_to_instruction();
+								reply_to_instruction(reply);
 								/* Zlecenie wykonania ruchow presynchronizacyjnych */
 								interpret_instruction(instruction);
 								// Jezeli wystapil blad w trakcie realizacji ruchow presynchronizacyjnych,
@@ -1006,10 +959,10 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 					break;
 				case SYNCHRO_TERMINATED:
 					/* Oczekiwanie na zapytanie od ECP o status zakonczenia synchronizacji (QUERY) */
-					if (receive_instruction() == lib::QUERY) { // instrukcja wlasciwa => zle jej wykonanie
+					if (receive_instruction(instruction) == lib::QUERY) { // instrukcja wlasciwa => zle jej wykonanie
 						// Budowa adekwatnej odpowiedzi
 						reply.reply_type = lib::SYNCHRO_OK;
-						reply_to_instruction();
+						reply_to_instruction(reply);
 						next_state = GET_INSTRUCTION;
 						msg->message("Robot is synchronised");
 					} else { // blad: powinna byla nadejsc instrukcja QUERY
@@ -1018,9 +971,9 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 					break;
 				case WAIT_Q:
 					/* Oczekiwanie na zapytanie od ECP o status zakonczenia synchronizacji (QUERY) */
-					if (receive_instruction() == lib::QUERY) { // instrukcja wlasciwa => zle jej wykonanie
+					if (receive_instruction(instruction) == lib::QUERY) { // instrukcja wlasciwa => zle jej wykonanie
 						// Budowa adekwatnej odpowiedzi
-						reply_to_instruction();
+						reply_to_instruction(reply);
 						next_state = GET_SYNCHRO;
 					} else { // blad: powinna byla nadejsc instrukcja QUERY
 						throw NonFatal_error_3(QUERY_EXPECTED);
@@ -1037,9 +990,9 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			// Obsluga bledow nie fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
-			establish_error(nfe1.error, OK);
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe1.error, 0);
+			establish_error(reply, nfe1.error, OK);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe1.error);
 			// powrot do stanu: GET_SYNCHRO
 			next_state = GET_SYNCHRO;
 		} // end: catch(transformer::NonFatal_error_1 nfe1)
@@ -1050,9 +1003,9 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
 			// zapamietanie poprzedniej odpowiedzi
 			lib::REPLY_TYPE rep_type = reply.reply_type;
-			establish_error(nfe2.error, OK);
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe2.error, 0);
+			establish_error(reply, nfe2.error, OK);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe2.error);
 			// przywrocenie poprzedniej odpowiedzi
 			reply.reply_type = rep_type; // powrot do stanu: WAIT_Q
 			next_state = WAIT_Q;
@@ -1066,12 +1019,12 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			lib::REPLY_TYPE rep_type = reply.reply_type;
 			uint64_t err_no_0 = reply.error_no.error0;
 			uint64_t err_no_1 = reply.error_no.error1;
-			establish_error(nfe3.error, OK);
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe3.error, 0);
+			establish_error(reply, nfe3.error, OK);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe3.error);
 			// przywrocenie poprzedniej odpowiedzi
 			reply.reply_type = rep_type;
-			establish_error(err_no_0, err_no_1);
+			establish_error(reply, err_no_0, err_no_1);
 			msg->message(lib::NON_FATAL_ERROR, err_no_0, err_no_1);
 			// powrot do stanu: GET_SYNCHRO
 			next_state = GET_SYNCHRO;
@@ -1083,9 +1036,9 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
 			// zapamietanie poprzedniej odpowiedzi
 			lib::REPLY_TYPE rep_type = reply.reply_type;
-			establish_error(nfe4.error, OK);
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe4.error, 0);
+			establish_error(reply, nfe4.error, OK);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe4.error);
 			// przywrocenie poprzedniej odpowiedzi
 			reply.reply_type = rep_type;
 			// powrot do stanu: SYNCHRO_TERMINATED
@@ -1096,16 +1049,16 @@ void motor_driven_effector::synchro_loop(STATE& next_state)
 			// Obsluga bledow fatalnych
 			// Konkretny numer bledu znajduje sie w skadowych error0 lub error1 obiektu fe
 			// Sa to bledy dotyczace sprzetu oraz QNXa (komunikacji)
-			if (receive_instruction() != lib::QUERY) {
+			if (receive_instruction(instruction) != lib::QUERY) {
 				// blad: powinna byla nadejsc instrukcja QUERY
-				establish_error(QUERY_EXPECTED, OK);
-				reply_to_instruction();
+				establish_error(reply, QUERY_EXPECTED, OK);
+				reply_to_instruction(reply);
 				printf("QQQ\n");
-				receive_instruction();
+				receive_instruction(instruction);
 			}
 			reply.reply_type = lib::ERROR;
-			establish_error(fe.error0, fe.error1);
-			reply_to_instruction();
+			establish_error(reply, fe.error0, fe.error1);
+			reply_to_instruction(reply);
 			msg->message(lib::FATAL_ERROR, fe.error0, fe.error1);
 			// powrot do stanu: GET_SYNCHRO
 			next_state = GET_SYNCHRO;
@@ -1123,7 +1076,7 @@ void motor_driven_effector::post_synchro_loop(STATE& next_state)
 			{
 				case GET_INSTRUCTION:
 					// wstepna interpretacja nadesanego polecenia w celu wykrycia nieprawidlowosci
-					switch (receive_instruction())
+					switch (receive_instruction(instruction))
 					{
 						case lib::SET:
 						case lib::GET:
@@ -1131,7 +1084,7 @@ void motor_driven_effector::post_synchro_loop(STATE& next_state)
 							// potwierdzenie przyjecia polecenia (dla ECP)
 							// printf("SET_GET\n");
 							reply.reply_type = lib::ACKNOWLEDGE;
-							reply_to_instruction();
+							reply_to_instruction(reply);
 							break;
 						case lib::SYNCHRO: // blad: robot jest juz zsynchronizowany
 							// okreslenie numeru bledu
@@ -1151,9 +1104,9 @@ void motor_driven_effector::post_synchro_loop(STATE& next_state)
 					next_state = WAIT;
 					break;
 				case WAIT:
-					if (receive_instruction() == lib::QUERY) { // instrukcja wlasciwa =>
+					if (receive_instruction(instruction) == lib::QUERY) { // instrukcja wlasciwa =>
 						// zlec jej wykonanie, czyli wyslij odpowiedz
-						reply_to_instruction();
+						reply_to_instruction(reply);
 					} else { // blad: powinna byla nadejsc instrukcja QUERY
 						throw NonFatal_error_3(QUERY_EXPECTED);
 					}
@@ -1164,31 +1117,31 @@ void motor_driven_effector::post_synchro_loop(STATE& next_state)
 			}
 		}
 
-		catch (NonFatal_error_1 nfe) {
+		catch (NonFatal_error_1 & nfe) {
 			// Obsluga bledow nie fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
-			establish_error(nfe.error, OK);
+			establish_error(reply, nfe.error, OK);
 			// printf("catch NonFatal_error_1\n");
 			// informacja dla ECP o bledzie
-			reply_to_instruction();
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			reply_to_instruction(reply);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// powrot do stanu: GET_INSTRUCTION
 			next_state = GET_INSTRUCTION;
 		} // end: catch(transformer::NonFatal_error_1 nfe)
 
-		catch (NonFatal_error_2 nfe) {
+		catch (NonFatal_error_2 & nfe) {
 			// Obsluga bledow nie fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesow
 			// printf ("catch master thread NonFatal_error_2\n");
-			establish_error(nfe.error, OK);
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			establish_error(reply, nfe.error, OK);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// powrot do stanu: WAIT
 			next_state = WAIT;
 		} // end: catch(transformer::NonFatal_error_2 nfe)
 
-		catch (NonFatal_error_3 nfe) {
+		catch (NonFatal_error_3 & nfe) {
 			// Obsluga bledow nie fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu nfe
 			// Sa to bledy nie zwiazane ze sprzetem i komunikacja miedzyprocesowa
@@ -1199,24 +1152,24 @@ void motor_driven_effector::post_synchro_loop(STATE& next_state)
 			uint64_t err_no_0 = reply.error_no.error0;
 			uint64_t err_no_1 = reply.error_no.error1;
 
-			establish_error(nfe.error, OK);
+			establish_error(reply, nfe.error, OK);
 			// informacja dla ECP o bledzie
-			reply_to_instruction();
+			reply_to_instruction(reply);
 			// przywrocenie poprzedniej odpowiedzi
 			reply.reply_type = rep_type;
-			establish_error(err_no_0, err_no_1);
+			establish_error(reply, err_no_0, err_no_1);
 			// printf("ERROR w EDP 3\n");
-			msg->message(lib::NON_FATAL_ERROR, nfe.error, 0);
+			msg->message(lib::NON_FATAL_ERROR, nfe.error);
 			// msg->message(lib::NON_FATAL_ERROR, err_no_0, err_no_1); // by Y - oryginalnie
 			// powrot do stanu: GET_INSTRUCTION
 			next_state = GET_INSTRUCTION;
 		} // end: catch(transformer::NonFatal_error_3 nfe)
 
-		catch (Fatal_error fe) {
+		catch (Fatal_error & fe) {
 			// Obsluga bledow fatalnych
 			// Konkretny numer bledu znajduje sie w skladowej error obiektu fe
 			// Sa to bledy dotyczace sprzetu oraz QNXa (komunikacji)
-			establish_error(fe.error0, fe.error1);
+			establish_error(reply, fe.error0, fe.error1);
 			msg->message(lib::FATAL_ERROR, fe.error0, fe.error1);
 			// Powrot do stanu: WAIT
 			next_state = WAIT;

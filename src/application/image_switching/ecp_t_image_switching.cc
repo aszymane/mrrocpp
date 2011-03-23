@@ -31,11 +31,13 @@ namespace task {
 //		ecp_t_image_switching::initialPositionJoints[MAX_SERVOS_NR] = { 0, -0.010, -1.693, -0.075, 0.011, 4.680, -1.577, 0.090 };
 
 //Constructors
-ecp_t_image_switching::ecp_t_image_switching(lib::configurator &_config) :
-	task(_config) {
+ecp_t_image_switching::ecp_t_image_switching(mrrocpp::lib::configurator& configurator) :
+	common::task::task(configurator) 
+{
 	logger::log_enabled = true;
 	logger::log_dbg_enabled = true;
-	ecp_m_robot = new mrrocpp::ecp::irp6p_m::robot(*this);
+//	ecp_m_robot = new mrrocpp::ecp::irp6p_m::robot(*this);
+	ecp_m_robot = (boost::shared_ptr<robot_t>) new ecp::irp6p_m::robot(*this);	
 
 
 //	smooth_gen = new common::generator::newsmooth(*this, lib::ECP_XYZ_ANGLE_AXIS, 6);
@@ -109,8 +111,8 @@ void ecp_t_image_switching::main_task_algorithm(void) {
 namespace common {
 namespace task {
 
-task* return_created_ecp_task(lib::configurator &_config) {
-	return new irp6p::task::ecp_t_image_switching(_config);
+task_base* return_created_ecp_task(lib::configurator &config) {
+	return new irp6p::task::ecp_t_image_switching(config);
 }
 
 }

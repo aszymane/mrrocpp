@@ -168,7 +168,8 @@ public:
 		if (reply.flag) {
 			return boost::lexical_cast <Type>(reply.key);
 		} else {
-			throw boost::property_tree::ptree_error("remote config query failed: probably missing key \"" + __section_name + "." + _key + "\" in config file. pt_path=\"" + pt_path + "\".");
+			throw boost::property_tree::ptree_error("remote config query failed: probably missing key \""
+				+ __section_name + "." + _key + "\" in config file. pt_path=\"" + pt_path + "\".");
 		}
 
 	}

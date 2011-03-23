@@ -59,7 +59,7 @@ class ecp_t_image_switching: public common::task::task {
 		boost::shared_ptr<termination_condition> term_cond;
 
 	public:
-	  ecp_t_image_switching(lib::configurator &_config);
+	  ecp_t_image_switching(lib::configurator &config);
 
 		void main_task_algorithm(void);
 };

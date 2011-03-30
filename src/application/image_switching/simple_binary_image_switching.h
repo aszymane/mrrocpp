@@ -8,7 +8,7 @@
 #ifndef SIMPLE_BINARY_IMAGE_SWITCHING_H_
 #define SIMPLE_BINARY_IMAGE_SWITCHING_H_
 
-#include "../servovision/visual_servo_manager.h"
+#include "../visual_servoing/visual_servo_manager.h"
 
 namespace mrrocpp {
 

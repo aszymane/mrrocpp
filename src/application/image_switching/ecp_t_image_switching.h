@@ -21,12 +21,14 @@
 #include "aggregated_image_switching.h"
 
 
-#include "../servovision/single_visual_servo_manager.h"
-#include "../servovision/pb_eih_visual_servo.h"
-#include "../servovision/pb_sac_visual_servo.h"
-#include "../servovision/cubic_constraint.h"
-#include "../servovision/object_reached_termination_condition.h"
-#include "../servovision/visual_servo_regulator_p.h"
+#include "../visual_servoing/single_visual_servo_manager.h"
+#include "../visual_servoing/pb_eih_visual_servo.h"
+#include "../visual_servoing/pb_sac_visual_servo.h"
+#include "../visual_servoing/cubic_constraint.h"
+#include "../visual_servoing/object_reached_termination_condition.h"
+#include "../visual_servoing/visual_servo_regulator_p.h"
+
+#include "application/visual_servoing/visual_servoing.h"
 
 
 using mrrocpp::ecp::common::generator::single_visual_servo_manager;
@@ -38,30 +40,20 @@ namespace ecp {
 namespace irp6p {
 namespace task {
 
-class ecp_t_image_switching: public common::task::task {
+class ecp_t_image_switching: public common::task::task
+{
+protected:
+	boost::shared_ptr<visual_servo_regulator> reg;
+	boost::shared_ptr<visual_servo_manager> sm;
+	boost::shared_ptr<visual_servo_manager> sm2;
+	boost::shared_ptr<visual_servo> eih;
+	boost::shared_ptr<visual_servo> sac;
+	boost::shared_ptr<termination_condition> term_cond;
 
-  protected:
-	 // common::generator::smooth* smoothgen2;
-//	  generator::ecp_g_image_switching* image_switching_generator;
-//	  generator::visual_servo_manager* visual_servo_gen;
-//	  mrrocpp::ecp::common::generator::smooth* smooth_gen;
-	  common::generator::newsmooth* smooth_gen;
+public:
+	ecp_t_image_switching(lib::configurator &config);
 
-//	  ecp_mp::sensor::fradia_sensor<image_switching_types::fradia_configuration, image_switching_types::position_based_reading, image_switching_types::position_based_searching> *vsp_fradia;
-
-//	  static const double initialPositionJoints[MAX_SERVOS_NR];
-
-		boost::shared_ptr<visual_servo_regulator> reg;
-		boost::shared_ptr<visual_servo_manager> sm;
-		boost::shared_ptr<visual_servo_manager> sm2;
-		boost::shared_ptr<visual_servo> eih;
-		boost::shared_ptr<visual_servo> sac;
-		boost::shared_ptr<termination_condition> term_cond;
-
-	public:
-	  ecp_t_image_switching(lib::configurator &config);
-
-		void main_task_algorithm(void);
+	void main_task_algorithm(void);
 };
 
 }

@@ -8,7 +8,7 @@
 #ifndef AGGREGATED_IMAGE_SWITCHING_H_
 #define AGGREGATED_IMAGE_SWITCHING_H_
 
-#include "../servovision/visual_servo_manager.h"
+#include "../visual_servoing/visual_servo_manager.h"
 
 namespace mrrocpp {
 

@@ -10,11 +10,11 @@
 
 
 #include "base/ecp/ecp_generator.h"
-#include "sensor/fradia/ecp_mp_s_fradia_sensor.h"
+#include "sensor/discode/discode_sensor.h"
 #include "base/lib/mrmath/mrmath.h"
 #include "base/ecp_mp/ecp_mp_sensor.h"
 #include "image_switching_types.h"
-#include "../servovision/visual_servo_manager.h"
+#include "../visual_servoing/visual_servo_manager.h"
 
 namespace mrrocpp {
 
@@ -32,7 +32,7 @@ class ecp_g_image_switching_new : public common::generator::visual_servo_manager
 {
 public:
 	ecp_g_image_switching_new(mrrocpp::ecp::common::task::task & ecp_task, const char * section_name, boost::shared_ptr <
-			mrrocpp::ecp::servovision::visual_servo> vs);
+			mrrocpp::ecp::visual_servoing::visual_servo> vs);
 	virtual ~ecp_g_image_switching_new();
 	virtual bool first_step();
 	virtual bool next_step();

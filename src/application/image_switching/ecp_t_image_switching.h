@@ -20,15 +20,8 @@
 #include "simple_binary_image_switching.h"
 #include "aggregated_image_switching.h"
 
-
-#include "../visual_servoing/single_visual_servo_manager.h"
-#include "../visual_servoing/pb_eih_visual_servo.h"
-#include "../visual_servoing/pb_sac_visual_servo.h"
-#include "../visual_servoing/cubic_constraint.h"
-#include "../visual_servoing/object_reached_termination_condition.h"
-#include "../visual_servoing/visual_servo_regulator_p.h"
-
 #include "application/visual_servoing/visual_servoing.h"
+
 
 
 using mrrocpp::ecp::common::generator::single_visual_servo_manager;

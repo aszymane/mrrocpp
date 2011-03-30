@@ -260,7 +260,7 @@ template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 template <typename MESSAGE_T>
 void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::send_to_fradia(const MESSAGE_T& message)
 {
-	logger::log_dbg("fradia_sensor::send_to_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
+	logger::log_dbg("fradia_sensor::send_to_fradia(): sizeof(MESSAGE_T): %d\n", (int)sizeof(MESSAGE_T));
 	int result = write(sockfd, &message, sizeof(MESSAGE_T));
 	if (result < 0) {
 		throw std::runtime_error(std::string("write() failed: ") + strerror(errno));
@@ -274,7 +274,7 @@ template <typename CONFIGURE_T, typename READING_T, typename INITIATE_T>
 template <typename MESSAGE_T>
 MESSAGE_T fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::receive_from_fradia(int timeout_us)
 {
-	logger::log_dbg("fradia_sensor::receive_from_fradia(): sizeof(MESSAGE_T): %d\n", sizeof(MESSAGE_T));
+	logger::log_dbg("fradia_sensor::receive_from_fradia(): sizeof(MESSAGE_T): %d\n", (int)sizeof(MESSAGE_T));
 	MESSAGE_T message;
 
 	if(timeout_us > 0){
@@ -401,11 +401,6 @@ void fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading()
 		}
 		//		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 1\n");
 		reading_message = receive_from_fradia <READING_T> ();
-<<<<<<< HEAD
-		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 2\n");
-=======
-		//		logger::log_dbg("fradia_sensor <CONFIGURE_T, READING_T, INITIATE_T>::get_reading() 2\n");
->>>>>>> 2bd4e48acc73d113ba8aad99b466b7ac1860e730
 		report = lib::sensor::VSP_REPLY_OK;
 	}
 	logger::log_dbg("fradia_sensor::get_reading() end\n");

@@ -25,14 +25,16 @@ simple_binary_image_switching::simple_binary_image_switching(mrrocpp::ecp::commo
 	servos.push_back(eih);
 	servos.push_back(sac);
 	state=0;
-	fsac=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/sac.txt","w");
-	feih=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/eih.txt","w");
+	fsac=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/zzsac.txt","w");
+	feih=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/zzeih.txt","w");
+	fboth=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/zzboth.txt","w");
 }
 
 simple_binary_image_switching::~simple_binary_image_switching()
 {
 	fclose(fsac);
 	fclose(feih);
+	fclose(fboth);
 }
 
 lib::Homog_matrix simple_binary_image_switching::get_aggregated_position_change()
@@ -55,7 +57,9 @@ lib::Homog_matrix simple_binary_image_switching::get_aggregated_position_change(
 	fprintf(feih,"%g\t%g\t%g\t%g\n",0.0,0.0,0.0,1.0);
 	fflush(feih);
 
-//	printf("czy widzi 0: %d\n", visible_eih);
+	fprintf(fboth,"%g\t%g\t%g\t%g\n",position_change_sac(0,3),position_change_sac(1,3),position_change_eih(0,3),position_change_eih(1,3));
+	fflush(fboth);
+	//	printf("czy widzi 0: %d\n", visible_eih);
 //	printf("czy widzi 1: %d\n", visible_sac);
 
 	// sprawdzic warunek zmiany stanu

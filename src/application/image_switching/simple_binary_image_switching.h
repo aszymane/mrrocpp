@@ -36,7 +36,7 @@ protected:
 	lib::Homog_matrix get_aggregated_position_change();
 	void configure_all_servos();
 	int state;
-	FILE *feih, *fsac;
+	FILE *feih, *fsac, *fboth;
 };
 
 /** @} */

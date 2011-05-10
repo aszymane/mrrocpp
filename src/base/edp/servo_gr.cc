@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <cerrno>
 #include <ctime>
+#include <exception>
 
 #include "base/lib/typedefs.h"
 #include "base/lib/mis_fun.h"
@@ -41,9 +42,34 @@ void servo_buffer::load_hardware_interface(void)
 	}
 }
 
+// obliczenie statystyk pradu
+void servo_buffer::compute_current_measurement_statistics()
+{
+	// dla  kazdej z osi
+	for (int k = 0; k < master.number_of_servos; k++) {
+		// pomiar pradu dla osi
+		int measured_current = hi->get_current(k);
+		master.reply.arm.measured_current.average_cubic[k] = 1;
+		master.reply.arm.measured_current.average_module[k] = 2;
+		master.reply.arm.measured_current.average_square[k] = 3;
+		master.reply.arm.measured_current.maksimum_module[k] = 4;
+		master.reply.arm.measured_current.minimum_module[k] = 5;
+		// dla pierwszego kroku
+		if (step_number_in_macrostep == 0) {
+
+			// dla pozostalych krokow
+		} else {
+
+		}
+
+	}
+}
+
 /*-----------------------------------------------------------------------*/
 uint8_t servo_buffer::Move_a_step(void)
 {
+	// obliczenie statystyk pradu
+	compute_current_measurement_statistics();
 	// wykonac ruch o krok nie reagujac na SYNCHRO_SWITCH oraz SYNCHRO_ZERO
 
 	Move_1_step();
@@ -108,14 +134,7 @@ void servo_buffer::send_to_SERVO_GROUP()
 
 	 SignalProcmask( 0,thread_id, SIG_BLOCK, &set, NULL ); // by Y uniemozliwienie jednoczesnego wystawiania spotkania do serwo przez edp_m i readera
 	 */
-#ifdef __QNXNTO__
-	if (MsgSend(servo_fd, &servo_command, sizeof(servo_command), &sg_reply, sizeof(sg_reply)) < 0) {
-		uint64_t e = errno;
-		perror("Send() from EDP to SERVO error");
-		master.msg->message(lib::SYSTEM_ERROR, e, "Send() from EDP to SERVO error");
-		throw System_error();
-	}
-#else
+
 	{
 		boost::lock_guard <boost::mutex> lock(servo_command_mtx);
 		servo_command_rdy = true;
@@ -128,7 +147,6 @@ void servo_buffer::send_to_SERVO_GROUP()
 		}
 		sg_reply_rdy = false;
 	}
-#endif
 
 	//   SignalProcmask( 0,thread_id, SIG_UNBLOCK, &set, NULL );
 
@@ -158,7 +176,7 @@ void servo_buffer::send_to_SERVO_GROUP()
 	}
 
 	// przepisanie stanu regulatora chwytaka
-	master.reply.arm.pf_def.gripper_reg_state = sg_reply.gripper_reg_state;
+	master.reply.arm.gripper_reg_state = sg_reply.gripper_reg_state;
 
 	// printf("edp_irp6s_and_conv_effector::send_to_SERVO_GROUP: %f, %f\n", current_motor_pos[4], sg_reply.abs_position[4]);
 
@@ -172,9 +190,19 @@ void servo_buffer::operator()()
 	// servo buffer has to be created before servo thread starts
 	//	std::auto_ptr<servo_buffer> sb(return_created_servo_buffer()); // bufor do komunikacji z EDP_MASTER
 
-	load_hardware_interface();
+	try {
 
-	lib::set_thread_priority(pthread_self(), lib::QNX_MAX_PRIORITY + 2);
+		load_hardware_interface();
+	}
+
+	catch (std::runtime_error & e) {
+		printf("servo group runtime error: %s \n", e.what());
+		master.msg->message(lib::FATAL_ERROR, e.what());
+		master.edp_shell.close_hardware_busy_file();
+		_exit(EXIT_SUCCESS);
+	}
+
+	lib::set_thread_priority(pthread_self(), 79);
 
 	// signal master thread to continue executing
 	thread_started.command();
@@ -238,7 +266,7 @@ void servo_buffer::get_all_positions(void)
 
 		// przyrost polozenia w impulsach
 		servo_data.position[i] = regulator_ptr[i]->get_position_inc(1);
-		servo_data.current[i] = regulator_ptr[i]->get_meassured_current();
+		servo_data.current[i] = regulator_ptr[i]->get_measured_current();
 		servo_data.PWM_value[i] = regulator_ptr[i]->get_PWM_value();
 		servo_data.algorithm_no[i] = regulator_ptr[i]->get_algorithm_no();
 		servo_data.algorithm_parameters_no[i] = regulator_ptr[i]->get_algorithm_parameters_no();
@@ -268,20 +296,9 @@ SERVO_COMMAND servo_buffer::command_type() const
 }
 
 servo_buffer::servo_buffer(motor_driven_effector &_master) :
-#ifndef __QNXNTO__
-			servo_command_rdy(false), sg_reply_rdy(false),
-#endif
-			thread_started(), master(_master)
+	servo_command_rdy(false), sg_reply_rdy(false), step_number_in_macrostep(0), thread_started(), master(_master)
 {
-#ifdef __QNXNTO__
-	if ((servo_to_tt_chid = ChannelCreate(_NTO_CHF_UNBLOCK)) == -1) {
-		perror("ChannelCreate()");
-	}
-	if ((servo_fd = ConnectAttach(0, 0, servo_to_tt_chid, 0, _NTO_COF_CLOEXEC)) == -1) {
-		perror("ConnectAttach()");
-	}
-	ThreadCtl(_NTO_TCTL_IO, NULL);
-#endif
+
 }
 
 /*-----------------------------------------------------------------------*/
@@ -290,14 +307,6 @@ bool servo_buffer::get_command(void)
 	// Odczytanie polecenia z EDP_MASTER o ile zostalo przyslane
 	bool new_command_available = false;
 
-#ifdef __QNXNTO__
-	// by Y zamiast creceive
-	if(TimerTimeout(CLOCK_REALTIME, _NTO_TIMEOUT_RECEIVE, NULL, NULL, NULL) == -1) {
-		perror("servo_buffer: TimerTimeout()");
-	}
-	if ((edp_caller = MsgReceive_r(servo_to_tt_chid, &command, sizeof(command), NULL)) >= 0)
-	new_command_available = true;
-#else
 	{
 		boost::lock_guard <boost::mutex> lock(servo_command_mtx);
 		if (servo_command_rdy) {
@@ -306,7 +315,6 @@ bool servo_buffer::get_command(void)
 			new_command_available = true;
 		}
 	}
-#endif
 
 	if (new_command_available) { // jezeli jest nowa wiadomosc
 
@@ -339,13 +347,7 @@ bool servo_buffer::get_command(void)
 				return false; // Potraktowac jakby nie bylo polecenia
 		} // end: switch
 	} else {
-#ifdef __QNXNTO__
-		/* Nie otrzymano nowego polecenia ruchu */
-		if (edp_caller != -ETIMEDOUT) {
-			// nastapil blad przy odbieraniu wiadomosci rozny od jej braku
-			fprintf(stderr, "SERVO_GROUP: Receive error from EDP_MASTER\n");
-		}
-#endif
+
 		return false;
 	}
 } // end: servo_buffer::get_command
@@ -421,7 +423,7 @@ uint8_t servo_buffer::convert_error(void)
 void servo_buffer::Move_passive(void)
 { //
 	// stanie w miejscu - krok bierny
-
+	step_number_in_macrostep = 1;
 	for (int j = 0; j < master.number_of_servos; j++) {
 		regulator_ptr[j]->insert_new_step(0.0); // zerowy przyrost polozenia dla wszystkich napedow
 	}
@@ -445,7 +447,7 @@ void servo_buffer::Move_passive(void)
 /*-----------------------------------------------------------------------*/
 void servo_buffer::Move(void)
 {
-
+	step_number_in_macrostep = 0;
 	double new_increment[master.number_of_servos];
 
 	// wykonanie makrokroku ruchu
@@ -466,10 +468,10 @@ void servo_buffer::Move(void)
 	}
 
 	// realizacja makrokroku przez wszystkie napedy;  i - licznik krokow ruchu
-	for (uint16_t j = 0; j < command.parameters.move.number_of_steps; j++) {
+	for (step_number_in_macrostep = 0; step_number_in_macrostep < command.parameters.move.number_of_steps; step_number_in_macrostep++) {
 		// by Y
 		// XXX by ptroja
-		if ((command.parameters.move.return_value_in_step_no == 0) && (j
+		if ((command.parameters.move.return_value_in_step_no == 0) && (step_number_in_macrostep
 				== command.parameters.move.return_value_in_step_no)) {
 			// czy juz wyslac info do EDP_MASTER?
 			// 	     std::cout<<"fsD\n";
@@ -487,13 +489,13 @@ void servo_buffer::Move(void)
 			regulator_ptr[k]->insert_new_step(new_increment[k]);
 			if (master.robot_test_mode) {
 				master.update_servo_current_motor_pos_abs(regulator_ptr[k]->previous_abs_position + new_increment[k]
-						* j, k);
+						* step_number_in_macrostep, k);
 			}
 		}
 
 		if (Move_a_step() == NO_ERROR_DETECTED) { // NO_ERROR_DETECTED
 			//  std::cout<<"NO_ERROR_DETECTED\n";
-			if ((command.parameters.move.return_value_in_step_no > 0) && (j
+			if ((command.parameters.move.return_value_in_step_no > 0) && (step_number_in_macrostep
 					== command.parameters.move.return_value_in_step_no - 1)) {
 				// czy juz wyslac info do EDP_MASTER?
 				if (reply_status.error0 || reply_status.error1) {
@@ -503,7 +505,7 @@ void servo_buffer::Move(void)
 			}
 		} else { // ERROR_DETECTED
 			//  std::cout<<"ERROR_DETECTED\n";
-			if (j > command.parameters.move.return_value_in_step_no - 1) {
+			if (step_number_in_macrostep > command.parameters.move.return_value_in_step_no - 1) {
 				reply_status.error0 = reply_status_tmp.error0 | SERVO_ERROR_IN_PHASE_2;
 				reply_status.error1 = reply_status_tmp.error1;
 				clear_reply_status_tmp();
@@ -536,10 +538,7 @@ void servo_buffer::reply_to_EDP_MASTER(void)
 	get_all_positions();
 
 	// Wyslac informacje do EDP_MASTER
-#ifdef __QNXNTO__
-	if (MsgReply(edp_caller, EOK, &servo_data, sizeof(servo_group_reply)) < 0)
-	perror(" Reply to EDP_MASTER error");
-#else
+
 	{
 		boost::lock_guard <boost::mutex> lock(sg_reply_mtx);
 
@@ -549,7 +548,7 @@ void servo_buffer::reply_to_EDP_MASTER(void)
 
 	// TODO: should not call notify with mutex locked?
 	sg_reply_cond.notify_one();
-#endif
+
 	// Wyzerowac zmienne sygnalizujace stan procesu
 	clear_reply_status();
 	send_after_last_step = false;
@@ -569,10 +568,6 @@ void servo_buffer::ppp(void) const
 /*-----------------------------------------------------------------------*/
 servo_buffer::~servo_buffer(void)
 {
-#ifdef __QNXNTO__
-	ConnectDetach_r(servo_fd);
-	ChannelDestroy_r(servo_to_tt_chid);
-#endif
 
 	// Destruktor grupy regulatorow
 	// Zniszcyc regulatory
@@ -618,7 +613,7 @@ uint64_t servo_buffer::compute_all_set_values(void)
 			regulator_ptr[j]->insert_new_pos_increment(regulator_ptr[j]->return_new_step() * axe_inc_per_revolution[j]
 					/ (2 * M_PI));
 		} else {
-			regulator_ptr[j]->insert_meassured_current(hi->get_current(j));
+			regulator_ptr[j]->insert_measured_current(hi->get_current(j));
 			regulator_ptr[j]->insert_new_pos_increment(hi->get_increment(j));
 		}
 		// obliczenie nowej wartosci zadanej dla napedu

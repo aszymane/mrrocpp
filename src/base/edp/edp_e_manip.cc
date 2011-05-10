@@ -54,6 +54,11 @@ bool manip_effector::compute_servo_joints_and_frame(void)
 
 			//obliczanie zadanej pozycji koncowki wedlug aktualnego rozkazu przetwarzanego w servo
 
+			// @bug race condition (issue #69)
+			while (!sb) {
+				std::cerr << "Race condition detected! (" << __FILE__ << ":" << __LINE__ << ")" << std::endl;
+				usleep(1000);
+			}
 
 			lib::MotorArray servo_desired_motor_pos(sb->command.parameters.move.abs_position, number_of_servos);
 
@@ -101,8 +106,8 @@ bool manip_effector::compute_servo_joints_and_frame(void)
 }
 
 /*--------------------------------------------------------------------------*/
-manip_effector::manip_effector(lib::configurator &_config, lib::robot_name_t l_robot_name) :
-	motor_driven_effector(_config, l_robot_name)
+manip_effector::manip_effector(shell &_shell, lib::robot_name_t l_robot_name) :
+	motor_driven_effector(_shell, l_robot_name)
 {
 }
 
@@ -148,10 +153,10 @@ void manip_effector::get_arm_position_with_force_and_sb(bool read_hardware, lib:
 
 	// okreslenie rodzaju wspolrzednych, ktore maja by odczytane
 	// oraz adekwatne wypelnienie bufora odpowiedzi
-
-	get_current_kinematic_model()->mp2i_transform(current_motor_pos, current_joints);
-	get_current_kinematic_model()->i2e_transform(current_joints, current_end_effector_frame);
-
+	if (is_synchronised()) {
+		get_current_kinematic_model()->mp2i_transform(current_motor_pos, current_joints);
+		get_current_kinematic_model()->i2e_transform(current_joints, current_end_effector_frame);
+	}
 	switch (instruction.get_arm_type)
 	{
 		case lib::FRAME:
@@ -160,7 +165,7 @@ void manip_effector::get_arm_position_with_force_and_sb(bool read_hardware, lib:
 			// TRANS z wewntrznych struktur danych TRANSFORMATORa
 			// do wewntrznych struktur danych REPLY_BUFFER
 
-			current_end_effector_frame.get_frame_tab(reply.arm.pf_def.arm_frame);
+			reply.arm.pf_def.arm_frame = current_end_effector_frame;
 
 			// dla robotow track i postument - oblicz chwytak
 
@@ -204,7 +209,7 @@ void manip_effector::get_arm_position_get_arm_type_switch(lib::c_buffer &instruc
 			// TRANS z wewntrznych struktur danych TRANSFORMATORa
 			// do wewntrznych struktur danych REPLY_BUFFER
 
-			current_end_effector_frame.get_frame_tab(reply.arm.pf_def.arm_frame);
+			reply.arm.pf_def.arm_frame = current_end_effector_frame;
 			break;
 		default: // blad: nieznany sposob zapisu wspolrzednych koncowki
 			motor_driven_effector::get_arm_position_get_arm_type_switch(instruction);
@@ -616,7 +621,8 @@ void manip_effector::get_robot_model(lib::c_buffer &instruction)
 
 			reply.robot_model.type = lib::TOOL_FRAME;
 
-			((mrrocpp::kinematics::common::kinematic_model_with_tool*) get_current_kinematic_model())->tool.get_frame_tab(reply.robot_model.tool_frame_def.tool_frame);
+			reply.robot_model.tool_frame_def.tool_frame
+					= ((mrrocpp::kinematics::common::kinematic_model_with_tool*) get_current_kinematic_model())->tool;
 
 			break;
 		default: // blad: nie istniejaca specyfikacja modelu robota

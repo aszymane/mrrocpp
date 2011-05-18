@@ -26,10 +26,12 @@ aggregated_image_switching::aggregated_image_switching(mrrocpp::ecp::common::tas
 	servos.push_back(sac);
 	state=0;
 	indeks=1.0;
+	fboth=fopen("/home/aszymane/workspace/mrrocpp-git/build/bin/zzboth.txt","w");
 }
 
 aggregated_image_switching::~aggregated_image_switching()
 {
+	fclose(fboth);
 }
 
 lib::Homog_matrix aggregated_image_switching::get_aggregated_position_change()
@@ -91,6 +93,12 @@ lib::Homog_matrix aggregated_image_switching::get_aggregated_position_change()
 //	position_change(3,1) = (1-dzeta)* position_change_eih(3,1) + dzeta*position_change_sac(3,1);
 //	position_change(3,2) = (1-dzeta)* position_change_eih(3,2) + dzeta*position_change_sac(3,2);
 //	position_change(3,3) = (1-dzeta)* position_change_eih(3,3) + dzeta*position_change_sac(3,3);
+
+	fprintf(fboth,"%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",
+			position_change_sac(0,3),position_change_sac(1,3),position_change_sac(2,3),
+			position_change_eih(0,3),position_change_eih(1,3),position_change_eih(2,3),
+			position_change(0,3),position_change(1,3),position_change(2,3));
+	fflush(fboth);
 
 	printf("%g\t%g\t%g\t%g\n",position_change(0,0),position_change(0,1),position_change(0,2),position_change(0,3));
 	printf("%g\t%g\t%g\t%g\n",position_change(1,0),position_change(1,1),position_change(1,2),position_change(1,3));

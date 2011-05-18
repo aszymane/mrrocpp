@@ -55,7 +55,9 @@ ecp_t_image_switching::ecp_t_image_switching(mrrocpp::lib::configurator& configu
 	boost::shared_ptr <discode_sensor> ds2 =boost::shared_ptr <discode_sensor>(new discode_sensor(config, config_section_name2));
 	sac = boost::shared_ptr<visual_servo> (new pb_sac_visual_servo(reg, ds2, config_section_name2, config));
 
-	sm = boost::shared_ptr<visual_servo_manager> (new simple_binary_image_switching( *this,
+//	sm = boost::shared_ptr<visual_servo_manager> (new simple_binary_image_switching( *this,
+//			config_section_name1, eih, config_section_name2, sac));
+	sm = boost::shared_ptr<visual_servo_manager> (new aggregated_image_switching( *this,
 			config_section_name1, eih, config_section_name2, sac));
 	sm->configure();
 

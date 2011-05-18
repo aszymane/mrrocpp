@@ -57,7 +57,7 @@ lib::Homog_matrix simple_binary_image_switching::get_aggregated_position_change(
 	fprintf(feih,"%g\t%g\t%g\t%g\n",0.0,0.0,0.0,1.0);
 	fflush(feih);
 
-	fprintf(fboth,"%g\t%g\t%g\t%g\n",position_change_sac(0,3),position_change_sac(1,3),position_change_eih(0,3),position_change_eih(1,3));
+	fprintf(fboth,"%g\t%g\t%g\t%g\t%g\t%g\n",position_change_sac(0,3),position_change_sac(1,3),position_change_sac(2,3),position_change_eih(0,3),position_change_eih(1,3),position_change_eih(2,3));
 	fflush(fboth);
 	//	printf("czy widzi 0: %d\n", visible_eih);
 //	printf("czy widzi 1: %d\n", visible_sac);

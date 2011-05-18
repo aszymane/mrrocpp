@@ -38,6 +38,7 @@ protected:
 	int state;
 	double indeks;
 	double dzeta;
+	FILE *fboth;
 };
 
 /** @} */

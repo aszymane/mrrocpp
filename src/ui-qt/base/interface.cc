@@ -8,6 +8,10 @@
 #include <boost/foreach.hpp>
 #include <dirent.h>
 #include <sys/wait.h>
+#include <boost/regex.hpp>
+#include <map>
+#include <string>
+#include <iostream>
 
 #include <QtGui/QApplication>
 #include <QFileDialog>
@@ -83,10 +87,33 @@ void Interface::start_on_timer()
 	timer->start(50);
 }
 
+bool Interface::html_it(std::string &_input, std::string &_output)
+{
+
+	try {
+		// Wyrażenie regularne reprezentujące pierwsze dwie kolumny (druga może być pusta)
+		boost::regex pattern("(<)|(>)|( )|(&)");
+		// Format stringu odpowiadający podmienianemu dopasowaniu.
+		std::string fmt("(?1&lt;)(?2&gt;)(?3&#160;)(?4&amp;)");
+
+		std::ostringstream t(std::ios::out | std::ios::binary);
+		std::ostream_iterator <char> oi(t);
+		boost::regex_merge(oi, _input.begin(), _input.end(), pattern, fmt, boost::match_default | boost::format_all);
+
+		_output = t.str();
+
+	} catch (std::exception &ex) {
+		std::cout << "blad" << ex.what() << std::endl;
+	}
+
+	return true;
+}
+
 void Interface::timer_slot()
 {
 
 	//fprintf(stderr, "OnTimer()\n");
+
 
 	QTextCharFormat format;
 
@@ -102,6 +129,8 @@ void Interface::timer_slot()
 
 		char current_line[400];
 
+		std::string html_line;
+
 		lib::sr_package_t sr_msg;
 
 		while (!(ui_sr_obj->buffer_empty())) { // dopoki mamy co wypisywac
@@ -115,29 +144,44 @@ void Interface::timer_slot()
 			strftime(current_line + 12, 100, "%H:%M:%S", localtime(&time));
 			sprintf(current_line + 20, ".%03u   ", (sr_msg.tv.tv_usec / 1000));
 
+			std::string input(current_line);
+
+			std::string output;
+
+			html_it(input, output);
+
+			html_line = "<font face=\"Monospace\" color=\"black\">" + output
+					+ "</font><font face=\"Monospace\" color=\"";
 			switch (sr_msg.process_type)
 			{
 				case lib::EDP:
-					strcat(current_line, "EDP: ");
+
+					strcat(current_line, "D: ");
+					html_line += "#767639\">D:&#160;";
 					break;
 				case lib::ECP:
-					strcat(current_line, "ECP: ");
+					strcat(current_line, "C: ");
+					html_line += "Slate Blue\">C:&#160;";
 					break;
 				case lib::MP:
 					// printf("mp w ontimer\n");
-					strcat(current_line, "MP:  ");
+					strcat(current_line, "M: ");
+					html_line += "#a54e8f\">M:&#160;";
 					break;
 				case lib::VSP:
-					strcat(current_line, "VSP: ");
+					strcat(current_line, "S: ");
+					html_line += "brown\">S:&#160;";
 					break;
 				case lib::UI:
-					strcat(current_line, "UI:  ");
+					strcat(current_line, "I: ");
+					html_line += "brown\">I:&#160;";
 					break;
 				default:
-					strcat(current_line, "???: ");
+					strcat(current_line, "?: ");
+					html_line += "magenta\">?:&#160;";
 					continue;
 			} // end: switch (message_buffer[reader_buf_position].process_type)
-
+			html_line += "</font>";
 			// FIXME: ?
 			sr_msg.process_type = lib::UNKNOWN_PROCESS_TYPE;
 
@@ -146,38 +190,46 @@ void Interface::timer_slot()
 
 			strcat(current_line, process_name_buffer);
 
+			input = std::string(process_name_buffer);
+
+			html_it(input, output);
+
+			html_line += "<font face=\"Monospace\" color=\"black\">" + output
+					+ "</font><font face=\"Monospace\" color=\"";
+
 			switch (sr_msg.message_type)
 			{
 				case lib::FATAL_ERROR:
 					strcat(current_line, "FE:   ");
-					format.setForeground(Qt::red);
-
+					//	format.setForeground(Qt::red);
+					html_line += "black\" style=\"background-color:'#ffc6c6';\">FE:&#160;&#160;&#160;";
 					break;
 				case lib::NON_FATAL_ERROR:
-
 					strcat(current_line, "NFE:  ");
-					format.setForeground(Qt::blue);
-
+					//	format.setForeground(Qt::blue);
+					html_line += "black\" style=\"background-color:'#c6e7ff';\">NFE:&#160;&#160;";
 					break;
 				case lib::SYSTEM_ERROR:
 					// printf("SYSTEM ERROR W ONTIMER\n");
 					// Informacja do UI o koniecznosci zmiany stanu na INITIAL_STATE
 					strcat(current_line, "SE:   ");
-					format.setForeground(Qt::magenta);
+					//	format.setForeground(Qt::magenta);
+					html_line += "black\" style=\"background-color:'#ffc6ef';\">SE:&#160;&#160;&#160;";
 
 					break;
 				case lib::NEW_MESSAGE:
 					strcat(current_line, "MSG:  ");
-					format.setForeground(Qt::black);
-
+					//	format.setForeground(Qt::black);
+					html_line += "black\">msg:&#160;&#160;";
 					break;
 				default:
 					strcat(current_line, "UE:   ");
-					format.setForeground(Qt::yellow);
+					html_line += "yellow\">UE:&#160;&#160;&#160;";
+					//	format.setForeground(Qt::yellow);
 
 			}; // end: switch (message.message_type)
-
-			mw->get_ui()->textEdit_sr->setCurrentCharFormat(format);
+			//	html_line += "</font>";
+			//	mw->get_ui()->textEdit_sr->setCurrentCharFormat(format);
 
 			std::string text(sr_msg.description);
 
@@ -187,14 +239,30 @@ void Interface::timer_slot()
 			bool first_it = true;
 			BOOST_FOREACH(std::string t, tokens)
 						{
+
+							input = t.c_str();
+
+							html_it(input, output);
+
 							if (first_it) {
 								first_it = false;
+
+								html_line += output + "</font>";
+
 							} else {
+								html_line
+										= "<font face=\"Monospace\" color=\"black\">&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160; "
+											"&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;"
+											"&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;"
+												+ output + "</font>";
+
 								strcpy(current_line, "                                                     ");
 							}
 							strcat(current_line, t.c_str());
 
-							mw->get_ui()->textEdit_sr->append(current_line);
+							mw->get_ui()->textEdit_sr->append(QString::fromStdString(html_line));
+
+							//	mw->get_ui()->textEdit_sr->append(current_line);
 							(*log_file_outfile) << current_line << std::endl;
 						}
 		}
@@ -758,6 +826,8 @@ void Interface::init()
 
 	manage_interface();
 
+	mw->get_ui()->textEdit_sr->setFocus();
+
 }
 
 //void Interface::print_on_sr(const std::string &text)
@@ -794,24 +864,14 @@ int Interface::MPup_int()
 
 			if (mp.pid > 0) {
 
-				unsigned tmp = 0;
-				// kilka sekund  (~1) na otworzenie urzadzenia
-				while ((mp.pulse_fd = messip::port_connect(mp.network_pulse_attach_point)) == lib::invalid_fd) {
-					if ((tmp++) < lib::CONNECT_RETRY) {
-						usleep(lib::CONNECT_DELAY);
-					} else {
-						fprintf(stderr, "name_open() for %s failed: %s\n", mp.network_pulse_attach_point.c_str(), strerror(errno));
-						break;
-					}
-				}
+				mp.MP = new RemoteAgent(lib::MP_SECTION);
+				mp.pulse = new OutputBuffer <char> (*mp.MP, "MP_PULSE");
 
 				teachingstate = ui::common::MP_RUNNING;
 
 				mp.state = ui::common::UI_MP_WAITING_FOR_START_PULSE; // mp wlaczone
 
-
 				raise_process_control_window();
-
 			} else {
 				fprintf(stderr, "mp spawn failed\n");
 			}
@@ -889,6 +949,15 @@ void Interface::manage_interface_slot()
 
 	if ((all_edps != all_edps_last_manage_interface_state) || (all_edps_synchro
 			!= all_edps_synchro_last_manage_interface_state) || (mp.state != mp.last_manage_interface_state)) {
+
+		if (((all_edps == UI_ALL_EDPS_NONE_ACTIVATED) && ((mp.state == UI_MP_NOT_PERMITED_TO_RUN) || (mp.state
+				== UI_MP_PERMITED_TO_RUN))) || (all_edps == UI_ALL_EDPS_NONE_LOADED)) {
+			mw->enable_menu_item(true, 1, mw->get_ui()->actionConfiguration);
+
+		} else {
+			mw->enable_menu_item(false, 1, mw->get_ui()->actionConfiguration);
+
+		}
 
 		switch (all_edps)
 		{
@@ -1563,16 +1632,8 @@ int Interface::execute_mp_pulse(char pulse_code)
 {
 
 	// printf("w send pulse\n");
-	if (mp.pulse_fd > 0) {
-		long pulse_value = 1;
-
-		if (messip::port_send_pulse(mp.pulse_fd, pulse_code, pulse_value))
-
-		{
-			perror("Blad w wysylaniu pulsu do mp");
-			fprintf(stderr, "Blad w wysylaniu pulsu do mp error: %s \n", strerror(errno));
-			delay(1000);
-		}
+	if (mp.pulse) {
+		mp.pulse->Send(pulse_code);
 	}
 
 	return 1;
@@ -1652,10 +1713,16 @@ int Interface::MPslay()
 			pulse_stop_mp();
 		}
 
-		if (mp.pulse_fd != lib::invalid_fd) {
-			messip::port_disconnect(mp.pulse_fd);
+		if (mp.pulse) {
+			delete mp.pulse;
 		} else {
 			std::cerr << "MP pulse not connected?" << std::endl;
+		}
+
+		if (mp.MP) {
+			delete mp.MP;
+		} else {
+			std::cerr << "MP not connected?" << std::endl;
 		}
 
 		// 	printf("dddd: %d\n", SignalKill(ini_con->mp-
@@ -1680,7 +1747,10 @@ int Interface::MPslay()
 	// 	kill(mp_pid,SIGTERM);
 	// 	printf("mp pupa po kill\n");
 	mp.pid = -1;
-	mp.pulse_fd = lib::invalid_fd;
+
+	mp.pulse = NULL;
+	mp.MP = NULL;
+
 	BOOST_FOREACH(const ui::common::robot_pair_t & robot_node, robot_m)
 				{
 					robot_node.second->deactivate_ecp_trigger();
@@ -1873,7 +1943,7 @@ int Interface::slay_all()
 		 system(system_command);
 		 */delay(100);
 
-		sprintf(system_command, "rsh -l %s %s killall -e -q %s", program_node_user_list_iterator->user_name.c_str(), program_node_user_list_iterator->node_name.c_str(), program_node_user_list_iterator->program_name.c_str());
+		sprintf(system_command, "rsh -l %s %s killall -9 -e -q %s", program_node_user_list_iterator->user_name.c_str(), program_node_user_list_iterator->node_name.c_str(), program_node_user_list_iterator->program_name.c_str());
 
 		printf("slay_all: %s\n", system_command);
 		// przedniolsem wywolanie system do innego prceosu bo w procesie glownym czasem powoduje zawieszenie calego intefrejsu

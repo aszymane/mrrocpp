@@ -74,7 +74,7 @@ void ecp_t_image_switching::main_task_algorithm(void) {
 	sm->Move();
 	sr_ecp_msg->message("moved");
 
-	ecp_termination_notice();
+//	ecp_termination_notice();
 	sr_ecp_msg->message("noticed");
 }
 ;

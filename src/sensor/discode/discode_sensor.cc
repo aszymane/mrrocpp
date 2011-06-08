@@ -124,7 +124,7 @@ void discode_sensor::configure_sensor()
 	// Try to establish a connection with discode.
 	if (connect(sockfd, (const struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
 		state = DSS_ERROR;
-		throw ds_connection_exception("connect(): " + string(strerror(errno)));
+		throw ds_connection_exception("discode_sensor::configure_sensor(): connect(): " + string(strerror(errno)));
 	}
 
 	// there was no reading

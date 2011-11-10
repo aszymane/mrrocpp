@@ -50,9 +50,12 @@
 #include "robot/bird_hand/mp_r_bird_hand.h"
 #include "robot/irp6ot_tfg/mp_r_irp6ot_tfg.h"
 #include "robot/irp6p_tfg/mp_r_irp6p_tfg.h"
-#include "robot/shead/mp_r_shead.h"
-#include "robot/spkm/mp_r_spkm.h"
-#include "robot/smb/mp_r_smb.h"
+#include "robot/shead/mp_r_shead1.h"
+#include "robot/shead/mp_r_shead2.h"
+#include "robot/spkm/mp_r_spkm1.h"
+#include "robot/spkm/mp_r_spkm2.h"
+#include "robot/smb/mp_r_smb1.h"
+#include "robot/smb/mp_r_smb2.h"
 #include "robot/sarkofag/mp_r_sarkofag.h"
 #include "robot/festival/const_festival.h"
 #include "robot/player/const_player.h"
@@ -73,9 +76,12 @@ void fsautomat::create_robots()
 
 	ACTIVATE_MP_ROBOT(polycrank);
 	ACTIVATE_MP_ROBOT(bird_hand);
-	ACTIVATE_MP_ROBOT(spkm);
-	ACTIVATE_MP_ROBOT(smb);
-	ACTIVATE_MP_ROBOT(shead);
+	ACTIVATE_MP_ROBOT(spkm1);
+	ACTIVATE_MP_ROBOT(spkm2);
+	ACTIVATE_MP_ROBOT(smb1);
+	ACTIVATE_MP_ROBOT(smb2);
+	ACTIVATE_MP_ROBOT(shead1);
+	ACTIVATE_MP_ROBOT(shead2);
 	ACTIVATE_MP_ROBOT(irp6ot_tfg);
 	ACTIVATE_MP_ROBOT(irp6ot_m);
 	ACTIVATE_MP_ROBOT(irp6p_tfg);
@@ -230,7 +236,7 @@ common::State fsautomat::createState(xmlNodePtr stateNode)
 									&& !xmlStrcmp(set_node->name, (const xmlChar *) "ROBOT"))
 								actState.robotSet->firstSet.push_back(lib::returnProperRobot((char *) xmlNodeGetContent(set_node)));
 					}
-					if (cchild_node->type == XML_ELEMENT_NODE
+					/*if (cchild_node->type == XML_ELEMENT_NODE
 							&& !xmlStrcmp(cchild_node->name, (const xmlChar *) "SecSet")) {
 						//actState.robotSet->secondSetCount = ((xmlLsCountNode(cchild_node)) - 1) / 2;
 						//actState.robotSet->secondSet = new lib::robot_name_t[actState.robotSet->secondSetCount];
@@ -238,7 +244,7 @@ common::State fsautomat::createState(xmlNodePtr stateNode)
 							if (set_node->type == XML_ELEMENT_NODE
 									&& !xmlStrcmp(set_node->name, (const xmlChar *) "ROBOT"))
 								actState.robotSet->secondSet.push_back(lib::returnProperRobot((char *) xmlNodeGetContent(set_node)));
-					}
+					}*/
 				}
 			} else if (!xmlStrcmp(child_node->name, (const xmlChar *) "TrajectoryFilePath")
 					|| !xmlStrcmp(child_node->name, (const xmlChar *) "GeneratorParameters")
@@ -313,12 +319,14 @@ fsautomat::stateMap_t fsautomat::takeStatesMap()
 			common::State actState = createState(cur_node);
 			statesMap.insert(stateMap_t::value_type(actState.getStateID(), actState));
 		}
+
 	}
 	// free the document
 	xmlFreeDoc(doc);
 	// free the global variables that may
 	// have been allocated by the parser
 	xmlCleanupParser();
+
 	return statesMap;
 }
 
@@ -349,7 +357,7 @@ void fsautomat::stopProperGen(const common::State &state)
 	if (!state.robotSet)
 		send_end_motion_to_ecps(1, (state.getRobot()).c_str());
 	// TODO
-	//send_end_motion_to_ecps(state.robotSet->firstSetCount, state.robotSet->firstSet);
+	//send_end_motion_to_ecps(state.robotSet->firstSet.size(), state.robotSet->firstSet);
 }
 
 void fsautomat::runWaitFunction(const common::State &state)
@@ -359,13 +367,18 @@ void fsautomat::runWaitFunction(const common::State &state)
 
 void fsautomat::runEmptyGen(const common::State &state)
 {
-	//	run_extended_empty_gen_base(state.getNumArgument(), 1, (state.getRobot()).c_str());
+	//TODO
+	//run_extended_empty_gen_base(state.getNumArgument(), 1, (state.getRobot()).c_str());
+	std::vector <lib::robot_name_t> myvector;
+	myvector.push_back(state.getRobot());
+	wait_for_task_termination(true, 1, myvector);
 }
 
 void fsautomat::runEmptyGenForSet(const common::State &state)
 {
-	// TODO
-	//wait_for_task_termination(false, state.robotSet->secondSetCount, state.robotSet->secondSet);
+	//TODO
+	//run_extended_empty_gen_and_wait(state.robotSet->firstSetCount, state.robotSet->secondSetCount, state.robotSet->firstSet, state.robotSet->secondSet);
+	wait_for_task_termination(true, state.robotSet->firstSet.size(), state.robotSet->firstSet);
 }
 
 void fsautomat::executeMotion(const common::State &state)
@@ -373,9 +386,9 @@ void fsautomat::executeMotion(const common::State &state)
 	std::cout << "STATE STRING w executeMotion:  " << state.getStringArgument() << std::endl;
 	int trjConf = config.value <int> ("trajectory_from_xml", "[xml_settings]");
 	if (trjConf && state.getGeneratorType() == ecp_mp::generator::ECP_GEN_NEWSMOOTH) {
-		set_next_ecps_state(state.getGeneratorType(), state.getNumArgument(), state.getStateID(), 0, 1, (state.getRobot()).c_str());
+		set_next_ecp_state(state.getGeneratorType(), state.getNumArgument(), state.getStateID(), 0, state.getRobot());
 	} else {
-		set_next_ecps_state(state.getGeneratorType(), state.getNumArgument(), state.getStringArgument().c_str(), 0, 1, (state.getRobot()).c_str());
+		set_next_ecp_state(state.getGeneratorType(), state.getNumArgument(), state.getStringArgument().c_str(), 0, state.getRobot());
 	}
 }
 
@@ -775,24 +788,24 @@ void fsautomat::main_task_algorithm(void)
 				}
 
 	for (; nextState != "_STOP_"; nextState = stateMap[nextState].returnNextStateID(sh)) {
-
 		if (nextState == "_END_") {
 			nextState = sh.popTargetName();
 		}
 
 		// protection from wrong targetID specyfication
 		if (stateMap.count(nextState) == 0)
+		{
+			//std::cout<<"ASKUBIS error, state not found: "<<nextState<<std::endl;
 			break;
+		}
 
 		const std::string & currentStateType = stateMap[nextState].getType();
 
-		std::cout << "TYP STANU:" << currentStateType << std::endl;
-
-		if (currentStateType == "runGenerator") {
+		if (currentStateType == "set_next_ecp_state") {
 			executeMotion(stateMap[nextState]);
-			std::cout << "TESTmotion" << std::endl;
 			std::cout << nextState << " -> zakonczony" << std::endl;
-		} else if (currentStateType == "emptyGenForSet") {
+
+		} else if (currentStateType == "wait_for_task_termination") {
 			runEmptyGenForSet(stateMap[nextState]);
 			std::cout << nextState << " -> zakonczony" << std::endl;
 
@@ -800,11 +813,11 @@ void fsautomat::main_task_algorithm(void)
 			runEmptyGen(stateMap[nextState]);
 			std::cout << nextState << " -> zakonczony" << std::endl;
 
-		} else if (currentStateType == "wait") {
+		} else if (currentStateType == "wait_ms") {
 			runWaitFunction(stateMap[nextState]);
 			std::cout << nextState << " -> zakonczony" << std::endl;
 
-		} else if (currentStateType == "stopGen") {
+		} else if (currentStateType == "send_end_motion_to_ecps") {
 			stopProperGen(stateMap[nextState]);
 			std::cout << nextState << " -> zakonczony" << std::endl;
 

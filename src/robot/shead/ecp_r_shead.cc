@@ -16,8 +16,8 @@ namespace mrrocpp {
 namespace ecp {
 namespace shead {
 
-robot::robot(lib::configurator &_config, lib::sr_ecp &_sr_ecp) :
-	ecp::common::robot::ecp_robot(lib::shead::ROBOT_NAME, lib::shead::NUM_OF_SERVOS, _config, _sr_ecp),
+robot::robot(const lib::robot_name_t & _robot_name, lib::configurator &_config, lib::sr_ecp &_sr_ecp) :
+	ecp::common::robot::ecp_robot(_robot_name, lib::shead::NUM_OF_SERVOS, _config, _sr_ecp),
 			shead_head_soldification_data_port(lib::shead::HEAD_SOLIDIFICATION_DATA_PORT, port_manager),
 			shead_vacuum_activation_data_port(lib::shead::VACUUM_ACTIVATION_DATA_PORT, port_manager),
 			shead_reply_data_request_port(lib::shead::REPLY_DATA_REQUEST_PORT, port_manager)
@@ -26,8 +26,8 @@ robot::robot(lib::configurator &_config, lib::sr_ecp &_sr_ecp) :
 	create_kinematic_models_for_given_robot();
 }
 
-robot::robot(common::task::task_base& _ecp_object) :
-	ecp::common::robot::ecp_robot(lib::shead::ROBOT_NAME, lib::shead::NUM_OF_SERVOS, _ecp_object),
+robot::robot(const lib::robot_name_t & _robot_name, common::task::task_base& _ecp_object) :
+	ecp::common::robot::ecp_robot(_robot_name, lib::shead::NUM_OF_SERVOS, _ecp_object),
 			shead_head_soldification_data_port(lib::shead::HEAD_SOLIDIFICATION_DATA_PORT, port_manager),
 			shead_vacuum_activation_data_port(lib::shead::VACUUM_ACTIVATION_DATA_PORT, port_manager),
 			shead_reply_data_request_port(lib::shead::REPLY_DATA_REQUEST_PORT, port_manager)
@@ -110,8 +110,8 @@ void robot::create_command()
 
 	// message serialization
 	if (communicate_with_edp) {
-		memcpy(ecp_command.arm.serialized_command, &ecp_edp_cbuffer, sizeof(ecp_edp_cbuffer));
-		assert(sizeof(ecp_command.arm.serialized_command) >= sizeof(ecp_edp_cbuffer));
+		memcpy(ecp_command.serialized_command, &ecp_edp_cbuffer, sizeof(ecp_edp_cbuffer));
+		assert(sizeof(ecp_command.serialized_command) >= sizeof(ecp_edp_cbuffer));
 	}
 }
 
@@ -119,7 +119,7 @@ void robot::get_reply()
 {
 
 	// message deserialization
-	memcpy(&edp_ecp_rbuffer, reply_package.arm.serialized_reply, sizeof(edp_ecp_rbuffer));
+	memcpy(&edp_ecp_rbuffer, reply_package.serialized_reply, sizeof(edp_ecp_rbuffer));
 
 	// generator reply generation
 

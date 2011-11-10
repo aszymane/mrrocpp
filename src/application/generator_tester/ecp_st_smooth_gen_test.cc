@@ -107,7 +107,7 @@ void sub_task_smooth_gen_test::conditional_execution()
 	std::vector <double> coordinates3(7);//polycrank
 
 	// JOINT ABSOLUTE
-	/*sr_ecp_msg.message("Joint absolute");
+        sr_ecp_msg.message("Joint absolute");
 	sgenjoint->reset();
 	sgenjoint->set_absolute();
 	if (track) {
@@ -163,12 +163,12 @@ void sub_task_smooth_gen_test::conditional_execution()
 		coordinates2[6] = -2.664;
 		sgenjoint->load_absolute_joint_trajectory_pose(coordinates2);
 	} else if (postument) {
-		coordinates1[0] = -0.104;
-		coordinates1[1] = -1.342;
-		coordinates1[2] = 0.020;
-		coordinates1[3] = 1.034;
-		coordinates1[4] = 3.458;
-		coordinates1[5] = -2.738;
+                coordinates1[0] = -0.804;
+                coordinates1[1] = -1.342;
+                coordinates1[2] = 0.020;
+                coordinates1[3] = 1.034;
+                coordinates1[4] = 3.858;
+                coordinates1[5] = -2.738;
 		sgenjoint->load_absolute_joint_trajectory_pose(coordinates1);
 	}
 	else if (poly) {
@@ -185,7 +185,7 @@ void sub_task_smooth_gen_test::conditional_execution()
 
 	if (track) {
 		coordinates2[0] = 0.0;
-		coordinates2[1] = -0.087;
+                coordinates2[1] = -0.137;
 		coordinates2[2] = -1.542;
 		coordinates2[3] = 0.024;
 		coordinates2[4] = 1.219;
@@ -218,7 +218,7 @@ void sub_task_smooth_gen_test::conditional_execution()
 	// JOINT ABSOLUTE END
 
 
-	// JOINT RELATIVE
+        /*// JOINT RELATIVE
 	sr_ecp_msg.message("Joint relative");
 	sgenjoint->reset();
 	sgenjoint->set_relative();
@@ -541,12 +541,16 @@ void sub_task_smooth_gen_test::conditional_execution()
 		sgeneuler->Move();
 	}
 	// EULER RELATIVE END
-*/
 
-	/*// ANGLE AXIS ABSOLUTE
+
+        // ANGLE AXIS ABSOLUTE
 	sr_ecp_msg.message("Angle axis absolute");
 	sgenangle->reset();
 	sgenangle->set_absolute();
+
+        //network_path += "../src/application/generator_tester/jerky.trj";
+        //sgenangle->load_trajectory_from_file(network_path.c_str());
+        //sgenangle->load_trajectory_from_file("/Users/rafal/PW/mrrocpp/wut-rcprg/src/application/generator_tester/jerky.trj");
 
 	if (track) {
 		coordinates1[0] = 0.534987;
@@ -599,13 +603,13 @@ void sub_task_smooth_gen_test::conditional_execution()
 	}
 	sgenangle->load_absolute_angle_axis_trajectory_pose(coordinates1);
 
-	if (sgenangle->calculate_interpolate() && sgenangle->detect_jerks(0.3) == 0) {
+	if (sgenangle->calculate_interpolate() && sgenangle->detect_jerks(2) == 0) {
 		sgenangle->Move();
 	}
-	// ANGLE AXIS ABSOLUTE END*/
+	// ANGLE AXIS ABSOLUTE END
 
 
-	// ANGLE AXIS RELATIVE
+        // ANGLE AXIS RELATIVE
 	sr_ecp_msg.message("Angle axis relative");
 	sgenangle->reset();
 	sgenangle->set_relative();
@@ -661,10 +665,10 @@ void sub_task_smooth_gen_test::conditional_execution()
 	}
 	sgenangle->load_relative_angle_axis_trajectory_pose(coordinates1);
 
-	if (sgenangle->calculate_interpolate() && sgenangle->detect_jerks(0.3) == 0) {
+	if (sgenangle->calculate_interpolate() && sgenangle->detect_jerks(2) == 0) {
 		sgenangle->Move();
 	}
-	// ANGLE AXIS RELATIVE END*/
+        // ANGLE AXIS RELATIVE END*/
 }
 
 sub_task_smooth_gen_test::~sub_task_smooth_gen_test()

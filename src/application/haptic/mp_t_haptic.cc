@@ -34,7 +34,7 @@ task* return_created_mp_task(lib::configurator &_config)
 }
 
 haptic::haptic(lib::configurator &_config) :
-	task(_config)
+		task(_config)
 {
 
 }
@@ -51,11 +51,11 @@ void haptic::create_robots()
 void haptic::configure_edp_force_sensor(bool configure_track, bool configure_postument)
 {
 	if (configure_track) {
-		set_next_ecps_state(ecp_mp::sub_task::ECP_ST_BIAS_EDP_FORCE, 0, "", 0, 1, lib::irp6ot_m::ROBOT_NAME.c_str());
+		set_next_ecp_state(ecp_mp::sub_task::ECP_ST_BIAS_EDP_FORCE, 0, "", 0, lib::irp6ot_m::ROBOT_NAME);
 	}
 
 	if (configure_postument) {
-		set_next_ecps_state(ecp_mp::sub_task::ECP_ST_BIAS_EDP_FORCE, 0, "", 0, 1, lib::irp6p_m::ROBOT_NAME.c_str());
+		set_next_ecp_state(ecp_mp::sub_task::ECP_ST_BIAS_EDP_FORCE, 0, "", 0, lib::irp6p_m::ROBOT_NAME);
 	}
 
 	if ((configure_track) && (!configure_postument)) {
@@ -69,7 +69,7 @@ void haptic::configure_edp_force_sensor(bool configure_track, bool configure_pos
 
 void haptic::main_task_algorithm(void)
 {
-	generator::haptic mp_h_gen(*this, 10);
+	generator::haptic mp_h_gen(*this, 2);
 	mp_h_gen.robot_m = robot_m;
 
 	sr_ecp_msg->message("New series");
@@ -78,11 +78,11 @@ void haptic::main_task_algorithm(void)
 	// wlaczenie generatora do konfiguracji czujnika w EDP w obydwu robotach
 	configure_edp_force_sensor(true, true);
 	//	delay(1000);
-	//	sr_ecp_msg->message("set_next_ecps_state");
+	//	sr_ecp_msg->message("set_next_ecp_state");
 
 	// wlaczenie generatora transparentnego w obu robotach
-	set_next_ecps_state(ecp_mp::generator::ECP_GEN_TRANSPARENT, (int) 0, "", 0, 1, lib::irp6ot_m::ROBOT_NAME.c_str());
-	set_next_ecps_state(ecp_mp::generator::ECP_GEN_TRANSPARENT, (int) 0, "", 0, 1, lib::irp6p_m::ROBOT_NAME.c_str());
+	set_next_ecp_state(ecp_mp::generator::ECP_GEN_TRANSPARENT, (int) 0, "", 0, lib::irp6ot_m::ROBOT_NAME);
+	set_next_ecp_state(ecp_mp::generator::ECP_GEN_TRANSPARENT, (int) 0, "", 0, lib::irp6p_m::ROBOT_NAME);
 
 	// mp_h_gen.sensor_m = sensor_m;
 

@@ -12,6 +12,12 @@
 
 #include "../base/wgt_single_motor_move.h"
 
+#include "../base/signal_dispatcher.h"
+
+#include "../base/menu_bar.h"
+#include "../base/menu_bar_action.h"
+#include "../base/mp.h"
+
 namespace mrrocpp {
 namespace ui {
 namespace sarkofag {
@@ -33,15 +39,15 @@ void UiRobot::ui_get_controler_state(lib::controller_state_t & robot_controller_
 
 }
 
-int UiRobot::create_ui_ecp_robot()
+void UiRobot::create_ui_ecp_robot()
 {
 	ui_ecp_robot = new ui::common::EcpRobot(*this);
-	return 1;
+	//return 1;
 }
 
 int UiRobot::edp_create_int_extra_operations()
 {
-	wgt_move->synchro_depended_init();
+	wgts[WGT_SARKOFAG_MOVE]->synchro_depended_init();
 	return 1;
 }
 
@@ -89,7 +95,7 @@ int UiRobot::synchronise_int()
 	try {
 		// dla robota irp6_on_track
 
-		if ((state.edp.state > 0) && (state.edp.is_synchronised == false)) {
+		if ((is_edp_loaded()) && (state.edp.is_synchronised == false)) {
 			ui_ecp_robot->ecp->synchronise();
 			state.edp.is_synchronised = ui_ecp_robot->ecp->is_synchronised();
 		} else {
@@ -101,77 +107,58 @@ int UiRobot::synchronise_int()
 
 	// modyfikacje menu
 	interface.manage_interface();
-	wgt_move->synchro_depended_init();
-	wgt_move->init_and_copy();
+	wgts[WGT_SARKOFAG_MOVE]->synchro_depended_init();
+	wgts[WGT_SARKOFAG_MOVE]->init_and_copy();
 	return 1;
 
 }
 
 UiRobot::UiRobot(common::Interface& _interface) :
-	single_motor::UiRobot(_interface, lib::sarkofag::ROBOT_NAME, lib::sarkofag::NUM_OF_SERVOS)
+		single_motor::UiRobot(_interface, lib::sarkofag::ROBOT_NAME, lib::sarkofag::NUM_OF_SERVOS)
 {
-
-	wgt_move = new wgt_single_motor_move("Sarkofag moves", interface, *this, interface.get_main_window());
-	wndbase_m[WGT_SARKOFAG_MOVE] = wgt_move->dwgt;
-
+	add_wgt <wgt_single_motor_move>(WGT_SARKOFAG_MOVE, "Sarkofag moves");
 }
 
 int UiRobot::manage_interface()
 {
-	MainWindow *mw = interface.get_main_window();
-	Ui::MainWindow *ui = mw->get_ui();
+
+	single_motor::UiRobot::manage_interface();
 
 	switch (state.edp.state)
 	{
-		case -1:
-			mw->enable_menu_item(false, 1, ui->menuSarkofag);
+
+		case common::UI_EDP_INACTIVE:
 
 			break;
-		case 0:
-			mw->enable_menu_item(false, 4, ui->actionsarkofag_EDP_Unload, ui->actionsarkofag_Synchronisation, ui->actionsarkofag_Move, ui->actionsarkofag_Servo_Algorithm);
-			mw->enable_menu_item(true, 1, ui->menuSarkofag);
-			mw->enable_menu_item(true, 1, ui->actionsarkofag_EDP_Load);
-			mw->enable_menu_item(false, 1, ui->menusarkofag_Preset_Positions);
-
+		case common::UI_EDP_OFF:
+			actionsarkofag_Move->setEnabled(false);
 			break;
-		case 1:
-		case 2:
-			mw->enable_menu_item(true, 1, ui->menuSarkofag);
+		case common::UI_EDP_WAITING_TO_START_READER:
+		case common::UI_EDP_WAITING_TO_STOP_READER:
 
 			// jesli robot jest zsynchronizowany
 			if (state.edp.is_synchronised) {
-				mw->enable_menu_item(false, 1, ui->actionsarkofag_Synchronisation);
-				mw->enable_menu_item(true, 1, ui->menuall_Preset_Positions);
-
-				switch (interface.mp.state)
+				switch (interface.mp->mp_state.state)
 				{
 					case common::UI_MP_NOT_PERMITED_TO_RUN:
 					case common::UI_MP_PERMITED_TO_RUN:
-						mw->enable_menu_item(true, 3, ui->actionsarkofag_EDP_Unload, ui->actionsarkofag_Move, ui->actionsarkofag_Servo_Algorithm);
-						mw->enable_menu_item(false, 1, ui->actionsarkofag_EDP_Load);
-						mw->enable_menu_item(true, 1, ui->menusarkofag_Preset_Positions);
 
-						break;
 					case common::UI_MP_WAITING_FOR_START_PULSE:
-						mw->enable_menu_item(true, 2, ui->actionsarkofag_Move, ui->actionsarkofag_Servo_Algorithm);
-						mw->enable_menu_item(false, 2, ui->actionsarkofag_EDP_Load, ui->actionsarkofag_EDP_Unload);
-						mw->enable_menu_item(true, 1, ui->menusarkofag_Preset_Positions);
+						actionsarkofag_Move->setEnabled(true);
 
 						break;
 					case common::UI_MP_TASK_RUNNING:
-					case common::UI_MP_TASK_PAUSED:
-						mw->enable_menu_item(false, 2, ui->actionsarkofag_Move, ui->actionsarkofag_Servo_Algorithm);
-						mw->enable_menu_item(false, 1, ui->menusarkofag_Preset_Positions);
 
+						break;
+					case common::UI_MP_TASK_PAUSED:
+						actionsarkofag_Move->setEnabled(false);
 						break;
 					default:
 						break;
 				}
 			} else // jesli robot jest niezsynchronizowany
 			{
-				mw->enable_menu_item(true, 3, ui->actionsarkofag_EDP_Unload, ui->actionsarkofag_Synchronisation, ui->actionsarkofag_Move);
-				mw->enable_menu_item(false, 1, ui->actionsarkofag_EDP_Load);
-
+				actionsarkofag_Move->setEnabled(true);
 			}
 			break;
 		default:
@@ -179,6 +166,18 @@ int UiRobot::manage_interface()
 	}
 
 	return 1;
+}
+
+void UiRobot::setup_menubar()
+{
+	single_motor::UiRobot::setup_menubar();
+	Ui::MenuBar *menuBar = interface.get_main_window()->getMenuBar();
+	Ui::SignalDispatcher *signalDispatcher = interface.get_main_window()->getSignalDispatcher();
+
+	actionsarkofag_Move = new Ui::MenuBarAction(QString("&Move"), wgts[WGT_SARKOFAG_MOVE], signalDispatcher, menuBar);
+	robot_menu->addAction(actionsarkofag_Move);
+
+	robot_menu->setTitle(QApplication::translate("MainWindow", "&Sarkofag", 0, QApplication::UnicodeUTF8));
 }
 
 }

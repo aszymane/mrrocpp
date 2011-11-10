@@ -12,10 +12,17 @@
 #define _SMB_KIN_model
 
 #include "base/kinematics/kinematic_model.h"
+#include "dp_smb.h"
+
 
 namespace mrrocpp {
 namespace kinematics {
 namespace smb {
+
+//! Parameter for conversion of external legs rotation to degrees (in radians).
+//! * One step is equal to 60 degrees (PI/6).
+const double leg_rotational_ext2i_ratio = M_PI/6;
+
 
 /*!
  *
@@ -32,6 +39,20 @@ protected:
 	//! Method responsible for kinematic parameters setting.
 	void set_kinematic_parameters(void);
 
+	//! Parameters related to conversion from motor positions to joints.
+	static const double mp2i_ratios[mrrocpp::lib::smb::NUM_OF_SERVOS];
+
+	//! Largest values that the motor rotating the PKM can reach.
+	static const int32_t upper_pkm_motor_pos_limits;
+
+	//! Smallest values that the motor rotating the PKM can reach.
+	static const int32_t lower_pkm_motor_pos_limits;
+
+public:
+
+	//! Constructor.
+	model(void);
+
 	/**
 	 * @brief Checks whether given motor increments are valid.
 	 * @param motor_position Motor position to be validated.
@@ -43,10 +64,6 @@ protected:
 	 * @param q Joints to be validated.
 	 */
 	void check_joints(const lib::JointArray & q) const;
-
-public:
-	//! Constructor.
-	model(void);
 
 	/**
 	 * @brief Computes internal coordinates for given the motor increments (position) values.

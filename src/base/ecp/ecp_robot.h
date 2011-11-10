@@ -14,7 +14,6 @@
 #include "base/lib/sr/sr_ecp.h"
 #include "base/ecp_mp/ecp_mp_robot.h"
 #include "base/lib/single_thread_port.h"
-#include "base/lib/mis_fun.h"
 
 #include "base/lib/messip/messip_dataport.h"
 
@@ -209,7 +208,7 @@ public:
 	 * @param _config configuration object reference
 	 * @param _sr_ecp sr_ecp communication object reference
 	 */
-			ecp_robot_base(const lib::robot_name_t & _robot_name, int _number_of_servos, lib::configurator &_config, lib::sr_ecp &_sr_ecp);
+	ecp_robot_base(const lib::robot_name_t & _robot_name, int _number_of_servos, lib::configurator &_config, lib::sr_ecp &_sr_ecp);
 
 	/**
 	 * @brief constructor called from ECP
@@ -219,6 +218,12 @@ public:
 	 * @param _ecp_object ecp tak object reference
 	 */
 	ecp_robot_base(const lib::robot_name_t & _robot_name, int _number_of_servos, common::task::task_base& _ecp_object);
+
+	/**
+	 * @brief checks the flag
+	 * then sets the flag or throw exception. Called from create_command() method.
+	 */
+	void check_then_set_command_flag(bool& flag);
 
 	/**
 	 * @brief returns EDP_MASTER_Pid - EDP pid
@@ -284,7 +289,7 @@ public:
 	 * @param _sr_ecp sr_ecp communication object reference
 	 */
 	_ecp_robot(const lib::robot_name_t & _robot_name, int _number_of_servos, lib::configurator &_config, lib::sr_ecp &_sr_ecp) :
-		ecp_robot_base(_robot_name, _number_of_servos, _config, _sr_ecp)
+			ecp_robot_base(_robot_name, _number_of_servos, _config, _sr_ecp)
 	{
 	}
 
@@ -296,7 +301,7 @@ public:
 	 * @param _ecp_object ecp tak object reference
 	 */
 	_ecp_robot(const lib::robot_name_t & _robot_name, int _number_of_servos, common::task::task_base& _ecp_object) :
-		ecp_robot_base(_robot_name, _number_of_servos, _ecp_object)
+			ecp_robot_base(_robot_name, _number_of_servos, _ecp_object)
 	{
 	}
 

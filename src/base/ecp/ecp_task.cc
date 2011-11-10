@@ -148,6 +148,10 @@ void task_base::wait_for_stop(void)
 	while (command.Get().command != lib::STOP) {
 		ReceiveSingleMessage(true);
 	}
+	set_ecp_reply(lib::ECP_ACKNOWLEDGE);
+
+	// Reply with ACK
+	reply.Send(ecp_reply);
 }
 
 // Oczekiwanie na polecenie START od MP
@@ -157,9 +161,12 @@ void task_base::wait_for_start(void)
 	bool start_received = false;
 
 	while (!start_received) {
-		while (!command.isFresh()) {
-			ReceiveSingleMessage(true);
-		}
+		// wait for a new message
+		ReceiveSingleMessage(true);
+
+		// ignore non-MP commands
+		if (!command.isFresh())
+			continue;
 
 		command.markAsUsed();
 
@@ -197,19 +204,20 @@ void task_base::wait_for_start(void)
 // Oczekiwanie na kolejne zlecenie od MP
 void task_base::get_next_state(void)
 {
-	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state poczatek");
+
+//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state poczatek");
 
 	bool next_state_received = false;
 
 	while (!next_state_received) {
 		while (!command.isFresh()) {
-			sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 1");
+	//		sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 1");
 
 			ReceiveSingleMessage(true);
-			sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 2");
+	//		sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 2");
 
 		}
-		sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 3");
+	//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state 3");
 
 		command.markAsUsed();
 
@@ -217,7 +225,7 @@ void task_base::get_next_state(void)
 		{
 			case lib::NEXT_STATE:
 				set_ecp_reply(lib::ECP_ACKNOWLEDGE);
-				sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::NEXT_STATE");
+			//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::NEXT_STATE");
 
 				// Reply with ACK
 				reply.Send(ecp_reply);
@@ -225,7 +233,7 @@ void task_base::get_next_state(void)
 				break;
 			case lib::PAUSE_TASK:
 				//	set_ecp_reply(lib::ECP_ACKNOWLEDGE);
-				sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::PAUSE_TASK");
+			//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::PAUSE_TASK");
 
 				// Reply with ACK
 				//	reply.Send(ecp_reply);
@@ -233,7 +241,7 @@ void task_base::get_next_state(void)
 				break;
 			case lib::STOP:
 				set_ecp_reply(lib::ECP_ACKNOWLEDGE);
-				sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::STOP");
+			//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::STOP");
 
 				// Reply with ACK
 				reply.Send(ecp_reply);
@@ -241,7 +249,7 @@ void task_base::get_next_state(void)
 				break;
 			default:
 				set_ecp_reply(lib::INCORRECT_MP_COMMAND);
-				sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::INCORRECT_MP_COMMAND");
+			//	sr_ecp_msg->message(lib::NON_FATAL_ERROR, "get_next_state lib::INCORRECT_MP_COMMAND");
 
 				// Reply with NACK
 				reply.Send(ecp_reply);
@@ -251,20 +259,16 @@ void task_base::get_next_state(void)
 	}
 
 	// Extract the next command to the local variable
-	mp_2_ecp_next_state_string = mp_command.ecp_next_state.mp_2_ecp_next_state;
+	mp_2_ecp_next_state_string = mp_command.ecp_next_state.next_state;
 }
 
 // Receive a message from MP
 bool task_base::peek_mp_message()
 {
 	command.markAsUsed();
-	bool block;
 
-	if (continuous_coordination) {
-		block = true;
-	} else {
-		block = false;
-	}
+	const bool block = continuous_coordination;
+
 	if (ReceiveSingleMessage(block)) {
 		if (command.isFresh()) {
 
@@ -298,7 +302,7 @@ bool task_base::peek_mp_message()
 				case lib::PAUSE_TASK:
 					//	set_ecp_reply(lib::ECP_ACKNOWLEDGE);
 					sr_ecp_msg->message(lib::NON_FATAL_ERROR, "peek_mp_message lib::PAUSE_TASK");
-
+					command.markAsUsed();
 					// Reply with ACK
 					//reply.Send(ecp_reply);
 					wait_for_resume();
@@ -321,9 +325,21 @@ bool task_base::peek_mp_message()
 
 void task_base::wait_for_resume()
 {
-	if (ReceiveSingleMessage(true)) {
+	// Awaiting for the RESUME command
+	bool resume_received = false;
+
+	while (!resume_received) {
+
+		// wait for a new message
+		ReceiveSingleMessage(true);
+
+		// ignore non-MP messages
+		if (!command.isFresh())
+			continue;
+
 		command.markAsUsed();
-		switch (mp_command.command)
+
+		switch (command.Get().command)
 		{
 			case lib::STOP:
 				set_ecp_reply(lib::ECP_ACKNOWLEDGE);
@@ -339,6 +355,9 @@ void task_base::wait_for_resume()
 
 				// Reply with ACK
 				//	reply.Send(ecp_reply);
+
+				// leave the receive loop
+				resume_received = true;
 				break;
 			default:
 				set_ecp_reply(lib::INCORRECT_MP_COMMAND);
@@ -349,9 +368,7 @@ void task_base::wait_for_resume()
 				throw common::generator::ECP_error(lib::NON_FATAL_ERROR, INVALID_MP_COMMAND);
 				break;
 		}
-
 	}
-
 }
 
 } // namespace task

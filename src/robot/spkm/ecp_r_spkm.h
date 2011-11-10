@@ -10,7 +10,7 @@
  */
 
 #include "base/ecp/ecp_robot.h"
-#include "robot/spkm/const_spkm.h"
+#include "const_spkm.h"
 #include "base/kinematics/kinematics_manager.h"
 
 namespace mrrocpp {
@@ -67,7 +67,7 @@ public:
 	/**
 	 * @brief epos motion status reply data request port
 	 */
-	lib::single_thread_request_port <lib::epos::epos_reply> epos_reply_data_request_port;
+	lib::single_thread_request_port <lib::epos::epos_reply> epos_motor_reply_data_request_port;
 
 	/**
 	 * @brief epos motion status with joint reply data request port
@@ -84,13 +84,13 @@ public:
 	 * @param _config configuration object reference
 	 * @param _sr_ecp sr_ecp communication object reference
 	 */
-	robot(lib::configurator &_config, lib::sr_ecp &_sr_ecp);
+	robot(const lib::robot_name_t & _robot_name, lib::configurator &_config, lib::sr_ecp &_sr_ecp);
 
 	/**
 	 * @brief constructor called from ECP
 	 * @param _ecp_object ecp tak object reference
 	 */
-	robot(common::task::task_base& _ecp_object);
+	robot(const lib::robot_name_t & _robot_name, common::task::task_base& _ecp_object);
 
 	/**
 	 * @brief set the edp command buffer
@@ -99,17 +99,10 @@ public:
 	void create_command();
 
 	/**
-	 * @brief checks the flag
-	 * then sets the flag or throw exception. Called from create_command() method.
-	 */
-	void check_then_set_command_flag(bool& flag);
-
-	/**
 	 * @brief set the data_request_ports
 	 * basing on edp reply buffer
 	 */
 	void get_reply();
-
 };
 } // namespace spkm
 } // namespace ecp

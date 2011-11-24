@@ -12,13 +12,7 @@
 #include "base/ecp/ecp_task.h"
 #include <boost/shared_ptr.hpp>
 #include "generator/ecp/ecp_g_newsmooth.h"
-//#include "base/ecp/ecp_g_smooth.h"
-//#include "src/application/servovision/visual_servo_manager.h"
-//#include "../servovision/visual_servo_manager.h"
-//#include "ecp_g_image_switching_old.h"
-//#include "ecp_g_image_switching.h"
 #include "simple_binary_image_switching.h"
-#include "aggregated_image_switching.h"
 
 #include "application/visual_servoing/visual_servoing.h"
 

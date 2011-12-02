@@ -1,11 +1,11 @@
 /*
- * aggregated_backing_image_switching.cc
+ * aggregated_image_switching.cc
  *
  *  Created on: Oct 13, 2010
  *      Author: aszymane
  */
 
-#include "aggregated_backing_image_switching.h"
+#include "aggregated_image_switching.h"
 
 #include "base/lib/logger.h"
 
@@ -17,7 +17,7 @@ namespace common {
 
 namespace generator {
 
-aggregated_backing_image_switching::aggregated_backing_image_switching(mrrocpp::ecp::common::task::task & ecp_task, const char * section_name1, boost::shared_ptr <
+aggregated_image_switching::aggregated_image_switching(mrrocpp::ecp::common::task::task & ecp_task, const char * section_name1, boost::shared_ptr <
 		mrrocpp::ecp::servovision::visual_servo> eih, const char * section_name2, boost::shared_ptr <
 		mrrocpp::ecp::servovision::visual_servo> sac) :
 	visual_servo_manager(ecp_task, section_name1)
@@ -31,14 +31,14 @@ aggregated_backing_image_switching::aggregated_backing_image_switching(mrrocpp::
 	if(fboth!=NULL)
 		fclose(fboth);
 	else
-		printf("aggregated_backing_image_switching: Failed to open file\n");
+		printf("aggregated_image_switching: Failed to open file\n");
 }
 
-aggregated_backing_image_switching::~aggregated_backing_image_switching()
+aggregated_image_switching::~aggregated_image_switching()
 {
 }
 
-lib::Homog_matrix aggregated_backing_image_switching::get_aggregated_position_change()
+lib::Homog_matrix aggregated_image_switching::get_aggregated_position_change()
 {
 	lib::Homog_matrix position_change_eih = servos[0]->get_position_change(get_current_position(), get_dt());
 	lib::Homog_matrix position_change_sac = servos[1]->get_position_change(get_current_position(), get_dt());
@@ -59,7 +59,7 @@ lib::Homog_matrix aggregated_backing_image_switching::get_aggregated_position_ch
 	else
 	{
 		state = 1;
-		dzeta = 1;
+//		dzeta = 1;
 	}
 
 	Eigen::Matrix<double, 6, 1> error_eih;
@@ -124,7 +124,7 @@ lib::Homog_matrix aggregated_backing_image_switching::get_aggregated_position_ch
 	fboth=fopen("/home/aszymane/workspace/mrrocpp/build/bin/zzboth.txt","a");
 
 	if(fboth==NULL)
-		printf("aggregated_backing_image_switching: Failed to open file\n");
+		printf("aggregated_image_switching: Failed to open file\n");
 	else{
 		fprintf(fboth,"%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",
 				error_sac(0,0),error_sac(1,0),error_sac(2,0),
@@ -143,9 +143,9 @@ lib::Homog_matrix aggregated_backing_image_switching::get_aggregated_position_ch
 	return lib::Homog_matrix();
 }
 
-void aggregated_backing_image_switching::configure_all_servos()
+void aggregated_image_switching::configure_all_servos()
 {
-	//logger::logDbg("aggregated_backing_image_switching::configure_all_servos()\n");
+	//logger::logDbg("aggregated_image_switching::configure_all_servos()\n");
 }
 
 

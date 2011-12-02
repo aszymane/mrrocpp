@@ -1,11 +1,11 @@
 /*
- * simple_binary_image_switching.cc
+ * binary_treshold_image_switching.cc
  *
  *  Created on: Oct 13, 2010
  *      Author: aszymane
  */
 
-#include "simple_binary_image_switching.h"
+#include "binary_treshold_image_switching.h"
 
 #include "base/lib/logger.h"
 
@@ -17,7 +17,7 @@ namespace common {
 
 namespace generator {
 
-simple_binary_image_switching::simple_binary_image_switching(mrrocpp::ecp::common::task::task & ecp_task, const char * section_name1, boost::shared_ptr <
+binary_treshold_image_switching::binary_treshold_image_switching(mrrocpp::ecp::common::task::task & ecp_task, const char * section_name1, boost::shared_ptr <
 		mrrocpp::ecp::servovision::visual_servo> eih, const char * section_name2, boost::shared_ptr <
 		mrrocpp::ecp::servovision::visual_servo> sac) :
 	visual_servo_manager(ecp_task, section_name1)
@@ -30,65 +30,86 @@ simple_binary_image_switching::simple_binary_image_switching(mrrocpp::ecp::commo
 	if(fboth!=NULL)
 		fclose(fboth);
 	else
-		printf("simple_binary_image_switching: Failed to open file\n");
+		printf("binary_treshold_image_switching: Failed to open file\n");
 }
 
-simple_binary_image_switching::~simple_binary_image_switching()
+binary_treshold_image_switching::~binary_treshold_image_switching()
 {
 }
 
-lib::Homog_matrix simple_binary_image_switching::get_aggregated_position_change()
+lib::Homog_matrix binary_treshold_image_switching::get_aggregated_position_change()
 {
 	lib::Homog_matrix position_change_eih = servos[0]->get_position_change(get_current_position(), get_dt());
 	lib::Homog_matrix position_change_sac = servos[1]->get_position_change(get_current_position(), get_dt());
 
 	int visible_eih=servos[0]->is_object_visible();
 	int visible_sac=servos[1]->is_object_visible();
+	double ro = 0.2;
+	double error;
 
 	// sprawdzic warunek zmiany stanu
-	if(visible_eih==1)
-		state=0;
+	if(visible_eih == 1 && visible_sac == 0)
+		state = 0;
 	else
-		state=1;
+	{
+		if(visible_eih == 0 && visible_sac == 1)
+			state = 1;
+		else
+			state = 2;
+	}
 
 	Eigen::Matrix<double, 6, 1> error_eih;
 	Eigen::Matrix<double, 6, 1> error_sac;
 	Eigen::Matrix<double, 6, 1> agg_error;
 
+	// pobranie uchybow
 	if(visible_eih == 1)
 		error_eih = servos[0]->get_error();
 	else
 	{
-		error_eih(0,0)=0;
-		error_eih(1,0)=0;
-		error_eih(2,0)=0;
+		error_eih(0,0) = 0;
+		error_eih(1,0) = 0;
+		error_eih(2,0) = 0;
 	}
 	if(visible_sac == 1)
 		error_sac = servos[1]->get_error();
 	else
 	{
-		error_sac(0,0)=0;
-		error_sac(1,0)=0;
-		error_sac(2,0)=0;
+		error_sac(0,0) = 0;
+		error_sac(1,0) = 0;
+		error_sac(2,0) = 0;
+	}
+
+	if(state == 2)
+	{
+		agg_error(0,0) = 1/2 * error_sac(0,0) + 1/2 * error_eih(0,0);
+		agg_error(1,0) = 1/2 * error_sac(1,0) + 1/2 * error_eih(1,0);
+		agg_error(2,0) = 1/2 * error_sac(2,0) + 1/2 * error_eih(2,0);
+
+		error = sqrt(agg_error(0,0) * agg_error(0,0) + agg_error(1,0) * agg_error(1,0) + agg_error(2,0) * agg_error(2,0));
+		if(error > ro)
+			state = 1;
+		else
+			state = 0;
 	}
 
 	lib::Homog_matrix position_change;
 	if( state == 0 )
 	{
-		agg_error(0,0)=error_eih(0,0);
-		agg_error(1,0)=error_eih(1,0);
-		agg_error(2,0)=error_eih(2,0);
+		agg_error(0,0) = error_eih(0,0);
+		agg_error(1,0) = error_eih(1,0);
+		agg_error(2,0) = error_eih(2,0);
 	}
-	else
+	else // state == 1
 	{
-		agg_error(0,0)=error_sac(0,0);
-		agg_error(1,0)=error_sac(1,0);
-		agg_error(2,0)=error_sac(2,0);
+		agg_error(0,0) = error_sac(0,0);
+		agg_error(1,0) = error_sac(1,0);
+		agg_error(2,0) = error_sac(2,0);
 	}
 	fboth=fopen("/home/aszymane/workspace/mrrocpp/build/bin/zzboth.txt","a");
 
 	if(fboth==NULL)
-		printf("simple_binary_image_switching: Failed to open file\n");
+		printf("binary_treshold_image_switching: Failed to open file\n");
 	else{
 		fprintf(fboth,"%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\t%g\n",
 				error_sac(0,0),error_sac(1,0),error_sac(2,0),
@@ -110,9 +131,9 @@ lib::Homog_matrix simple_binary_image_switching::get_aggregated_position_change(
 	return lib::Homog_matrix();
 }
 
-void simple_binary_image_switching::configure_all_servos()
+void binary_treshold_image_switching::configure_all_servos()
 {
-	//logger::logDbg("simple_binary_image_switching::configure_all_servos()\n");
+	//logger::logDbg("binary_treshold_image_switching::configure_all_servos()\n");
 }
 
 

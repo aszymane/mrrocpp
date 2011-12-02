@@ -1,2 +1,7 @@
 add_subdirectory(aggregated_backing_image_switching)
+add_subdirectory(aggregated_image_switching)
 add_subdirectory(simple_binary_image_switching)
+add_subdirectory(binary_sac_image_switching)
+add_subdirectory(binary_treshold_image_switching)
+add_subdirectory(ternary_image_switching)
+add_subdirectory(ternary_changing_image_switching)

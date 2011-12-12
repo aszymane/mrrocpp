@@ -61,17 +61,17 @@ public:
 	/**
 	 * @brief epos external motion command data port
 	 */
-	lib::single_thread_port <lib::epos::epos_simple_command> epos_external_command_data_port;
+	lib::single_thread_port <lib::spkm::spkm_epos_simple_command> epos_external_command_data_port;
 
 	/**
 	 * @brief epos brake command data port
 	 */
-	lib::single_thread_port <bool> epos_brake_command_data_port;
+	lib::single_thread_port <lib::empty_t> epos_brake_command_data_port;
 
 	/**
 	 * @brief epos brake command data port
 	 */
-	lib::single_thread_port <bool> epos_clear_fault_data_port;
+	lib::single_thread_port <lib::empty_t> epos_clear_fault_data_port;
 
 	/**
 	 * @brief epos motion status reply data request port
@@ -112,16 +112,6 @@ public:
 	 * basing on edp reply buffer
 	 */
 	void get_reply();
-
-	/**
-	 * Input buffer for MP commands
-	 */
-	boost::shared_ptr<InputBuffer<lib::spkm::next_state_t> > nextstateBuffer;
-
-	/**
-	 * Output buffer for MP notifications
-	 */
-	boost::shared_ptr<OutputBuffer<lib::notification_t> > notifyBuffer;
 };
 } // namespace spkm
 } // namespace ecp

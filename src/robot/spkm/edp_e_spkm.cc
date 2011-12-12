@@ -39,11 +39,11 @@ using namespace mrrocpp::lib::pvat;
 using namespace std;
 
 const uint32_t effector::Vdefault[lib::spkm::NUM_OF_SERVOS] = { 5000UL, 5000UL, 5000UL, 5000UL, 5000UL, 5000UL };
-const uint32_t effector::Adefault[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 30000UL, 30000UL };
-const uint32_t effector::Ddefault[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 30000UL, 30000UL };
+const uint32_t effector::Adefault[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 15000UL, 30000UL };
+const uint32_t effector::Ddefault[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 15000UL, 30000UL };
 
 const uint32_t effector::MotorVmax[lib::spkm::NUM_OF_SERVOS] = { 5000UL, 5000UL, 5000UL, 5000UL, 5000UL, 5000UL };
-const uint32_t effector::MotorAmax[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 30000UL, 30000UL };
+const uint32_t effector::MotorAmax[lib::spkm::NUM_OF_SERVOS] = { 30000UL, 30000UL, 30000UL, 30000UL, 15000UL, 30000UL };
 
 effector::effector(common::shell &_shell, lib::robot_name_t l_robot_name) :
 		manip_effector(_shell, l_robot_name)
@@ -205,17 +205,17 @@ void effector::get_controller_state(lib::c_buffer &instruction)
 			}
 		}
 
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -290,20 +290,17 @@ void effector::synchronise(void)
 		// Now the robot is synchronised
 		controller_state_edp_buf.is_synchronised = true;
 
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -379,21 +376,21 @@ void effector::move_arm(const lib::c_buffer &instruction)
 		desired_motor_pos_old = desired_motor_pos_new;
 
 		// Check whether the motion was performed in the cartesian space - then we know where manipulator will be when the next command arrives:).
-		is_previous_cartesian_pose_known = (ecp_edp_cbuffer.set_pose_specification == lib::spkm::FRAME);
+		is_previous_cartesian_pose_known = (ecp_edp_cbuffer.set_pose_specification == lib::spkm::XYZ_EULER_ZYZ);
 		if (is_previous_cartesian_pose_known)
 			current_end_effector_frame = desired_end_effector_frame;
 
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -437,9 +434,9 @@ void effector::parse_motor_command()
 				get_current_kinematic_model()->check_motor_position(desired_motor_pos_new);
 
 				break;
-			case lib::spkm::FRAME:
+			case lib::spkm::XYZ_EULER_ZYZ:
 				// debug display
-				cout << "FRAME: [";
+				cout << "XYZ_EULER_ZYZ: [";
 				for (unsigned int i = 0; i < 6; ++i) {
 					cout << ecp_edp_cbuffer.goal_pos[i] << ", ";
 				}
@@ -547,17 +544,17 @@ void effector::execute_motor_motion()
 							axes[i]->setPositionProfileType(0); // Trapezoidal velocity profile
 
 							// Adjust velocity settings results in than 1 (minimal value accepted by the EPOS2)
-							if(Vnew[i] > 0 && Vnew[i] * maxon::epos::SECONDS_PER_MINUTE < 1.0) {
-								Vnew[i] = 1.1/maxon::epos::SECONDS_PER_MINUTE;
+							if (Vnew[i] > 0 && Vnew[i] * maxon::epos::SECONDS_PER_MINUTE < 1.0) {
+								Vnew[i] = 1.1 / maxon::epos::SECONDS_PER_MINUTE;
 							}
 
 							// Adjust acceleration settings which are less than 1 (minimal value accepted by the EPOS2)
-							if(Anew[i] > 0 && Anew[i] < 1) {
+							if (Anew[i] > 0 && Anew[i] < 1) {
 								Anew[i] = 1;
 							}
 
 							// Adjust deceleration settings which are less than 1 (minimal value accepted by the EPOS2)
-							if(Dnew[i] > 0 && Dnew[i] < 1) {
+							if (Dnew[i] > 0 && Dnew[i] < 1) {
 								Dnew[i] = 1;
 							}
 
@@ -710,7 +707,7 @@ void effector::interpolated_motion_in_operational_space()
 	Eigen::Matrix <double, lib::spkm::NUM_OF_MOTION_SEGMENTS + 1, 1> t;
 	compute_pvt_triplets_for_epos <lib::spkm::NUM_OF_MOTION_SEGMENTS + 1, lib::spkm::NUM_OF_SERVOS>(p, v, t, time_invervals, motor_3w, motor_2w, motor_1w, motor_0w);
 
-#if 0
+#if 1
 	cout<<"p = [ \n"<<p << "\n ]; \n";
 	cout<<"v = [ \n"<<v << "\n ]; \n";
 	cout<<"t = [ \n"<<t << "\n ]; \n";
@@ -935,6 +932,8 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 					if (!robot_test_mode) {
 						for (size_t i = 0; i < axes.size(); ++i) {
 							current_motor_pos[i] = axes[i]->getActualPosition();
+							edp_ecp_rbuffer.epos_controller[i].current = axes[i]->getActualCurrent();
+							edp_ecp_rbuffer.epos_controller[i].motion_in_progress = !axes[i]->isTargetReached();
 						}
 					}
 
@@ -946,10 +945,18 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 						edp_ecp_rbuffer.epos_controller[i].position = current_joints[i];
 					}
 					break;
-				case lib::spkm::FRAME: {
+				case lib::spkm::XYZ_EULER_ZYZ: {
 					msg->message("EDP get_arm_position FRAME");
 
 					edp_ecp_rbuffer.current_pose = lib::Homog_matrix();
+
+					if (!robot_test_mode) {
+						for (size_t i = 0; i < axes.size(); ++i) {
+							edp_ecp_rbuffer.epos_controller[i].current = axes[i]->getActualCurrent();
+							edp_ecp_rbuffer.epos_controller[i].motion_in_progress = !axes[i]->isTargetReached();
+						}
+					}
+
 				}
 					break;
 				default:
@@ -959,17 +966,17 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 		}
 
 		reply.servo_step = step_counter;
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 

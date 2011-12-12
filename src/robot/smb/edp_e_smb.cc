@@ -41,7 +41,7 @@ void effector::master_order(common::MT_ORDER nm_task, int nm_tryb)
 
 void effector::check_controller_state()
 {
-	if (robot_test_mode){
+	if (robot_test_mode) {
 		return;
 	}
 
@@ -120,17 +120,17 @@ void effector::get_controller_state(lib::c_buffer &instruction)
 				desired_joints[i] = current_joints[i];
 			}
 		}
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -272,7 +272,12 @@ void effector::synchronise(void)
 
 		// Step2: Homing.
 		// Activate homing mode.
-		pkm_rotation_node->doHoming(maxon::epos::HM_INDEX_NEGATIVE_SPEED, 0);
+		//pkm_rotation_node->doHoming(maxon::epos::HM_INDEX_NEGATIVE_SPEED, -1970);
+		// Step-by-step homing in order to omit the offset setting (the value will be stored in the EPOS for every agent separatelly).
+		pkm_rotation_node->setOperationMode(maxon::epos::OMD_HOMING_MODE);
+		pkm_rotation_node->reset();
+		pkm_rotation_node->startHoming();
+		pkm_rotation_node->monitorHomingStatus();
 
 		// Compute joints positions in the home position
 		get_current_kinematic_model()->mp2i_transform(current_motor_pos, current_joints);
@@ -289,21 +294,17 @@ void effector::synchronise(void)
 			BOOST_THROW_EXCEPTION(mrrocpp::edp::exception::fe_synchronization_unsuccessful());
 		}
 
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
-		BOOST_THROW_EXCEPTION(fe() << mrrocpp_error0(UNKNOWN_SYNCHRO_ERROR) << mrrocpp_error1(SYNCHRO_ERROR));
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -386,7 +387,7 @@ void effector::move_arm(const lib::c_buffer &instruction)
 					fai->command();
 				}
 				// If all legs are currently down - reset legs rotation.
-				if (current_legs_state() == lib::smb::ALL_DOWN) {
+				if (current_legs_state() == lib::smb::ALL_OUT) {
 					msg->message("ALL_DOWN");
 					/*// Homing of the motor controlling the legs rotation - set current position as 0.
 					 legs_rotation_node->doHoming(mrrocpp::edp::maxon::epos::HM_ACTUAL_POSITION, 0);
@@ -402,17 +403,17 @@ void effector::move_arm(const lib::c_buffer &instruction)
 				break;
 
 		}
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 
@@ -420,7 +421,7 @@ void effector::parse_motor_command()
 {
 	// The TWO_UP_ONE_DOWN is the only state in which control of both motors (legs and SPKM rotations) is possible.
 	// In other states control of the motor rotating the legs (lower SMB motor) is prohibited!
-	if (current_legs_state() != lib::smb::TWO_UP_ONE_DOWN) {
+	if (current_legs_state() != lib::smb::TWO_IN_ONE_OUT) {
 
 		// Check the difference between current and desired values.
 		// Check motors.
@@ -432,9 +433,9 @@ void effector::parse_motor_command()
 				&& (current_joints[0] != ecp_edp_cbuffer.joint_pos[0]))
 			BOOST_THROW_EXCEPTION(mrrocpp::edp::smb::nfe_clamps_rotation_prohibited_in_given_state()<<current_state(current_legs_state()));
 		// Check externals.
-		else if ((ecp_edp_cbuffer.set_pose_specification == lib::smb::FRAME)
+		else if ((ecp_edp_cbuffer.set_pose_specification == lib::smb::EXTERNAL)
 				&& (current_joints[0]
-						!= ecp_edp_cbuffer.goal_pos[0] * mrrocpp::kinematics::smb::leg_rotational_ext2i_ratio))
+						!= ecp_edp_cbuffer.base_vs_bench_rotation * mrrocpp::kinematics::smb::leg_rotational_ext2i_ratio))
 			BOOST_THROW_EXCEPTION(mrrocpp::edp::smb::nfe_clamps_rotation_prohibited_in_given_state()<<current_state(current_legs_state()));
 	}
 
@@ -472,12 +473,13 @@ void effector::parse_motor_command()
 			}
 		}
 			break;
-		case lib::smb::FRAME: {
-			msg->message("FRAME");
+		case lib::smb::EXTERNAL: {
+			msg->message("EXTERNAL");
 			// Leg rotational joint: Copy data directly from buffer and recalculate joint value.
-			desired_joints[0] = ecp_edp_cbuffer.goal_pos[0] * mrrocpp::kinematics::smb::leg_rotational_ext2i_ratio;
+			desired_joints[0] = ecp_edp_cbuffer.base_vs_bench_rotation
+					* mrrocpp::kinematics::smb::leg_rotational_ext2i_ratio;
 			// SPKM rotational joint: Copy data joint value directly from buffer.
-			desired_joints[1] = ecp_edp_cbuffer.goal_pos[1];
+			desired_joints[1] = ecp_edp_cbuffer.pkm_vs_base_rotation;
 			cout << "JOINT[0]: " << desired_joints[0] << endl;
 			cout << "JOINT[1]: " << desired_joints[1] << endl;
 
@@ -615,7 +617,7 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 						edp_ecp_rbuffer.epos_controller[i].position = current_joints[i];
 					}
 					break;
-				case lib::smb::FRAME:
+				case lib::smb::EXTERNAL:
 					msg->message("EDP get_arm_position FRAME");
 					// For every axis.
 					for (size_t i = 0; i < axes.size(); ++i) {
@@ -656,17 +658,17 @@ void effector::get_arm_position(bool read_hardware, lib::c_buffer &instruction)
 		fai->create_reply();
 		reply.servo_step = step_counter;
 
-	} catch (mrrocpp::lib::exception::mrrocpp_non_fatal_error & e_) {
+	} catch (mrrocpp::lib::exception::non_fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_NON_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_fatal_error & e_) {
+		HANDLE_EDP_NON_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::fatal_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_FATAL_ERROR(e_)
-	} catch (mrrocpp::lib::exception::mrrocpp_system_error & e_) {
+		HANDLE_EDP_FATAL_ERROR(e_)
+	} catch (mrrocpp::lib::exception::system_error & e_) {
 		// Standard error handling.
-		HANDLE_MRROCPP_SYSTEM_ERROR(e_)
+		HANDLE_EDP_SYSTEM_ERROR(e_)
 	} catch (...) {
-		msg->message(mrrocpp::lib::FATAL_ERROR, "Unknown error");
+		HANDLE_EDP_UNKNOWN_ERROR()
 	}
 }
 /*--------------------------------------------------------------------------*/
